@@ -3,7 +3,8 @@
 
 AUTHOR = 'Gregg Judge'
 SITENAME = 'Test Pelican'
-SITEURL = ''
+#SITEURL = ''
+SITEURL = 'https://judgegregg.github.io/pelitwi'
 
 PATH = 'content'
 
