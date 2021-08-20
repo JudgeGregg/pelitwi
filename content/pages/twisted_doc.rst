@@ -2,8 +2,10 @@ Twisted Matrix Labs (Demo Site)
 -------------------------------
 
 :title: Twisted Matrix Labs (Demo Site)
-:URL:
+:URL: index.html
 :save_as: index.html
+
+.. contents:: Table Of Contents
 
 
 What is Twisted?
@@ -14,7 +16,7 @@ Twisted is an event-driven networking engine written in Python and licensed unde
 Get Started with Pip
 ~~~~~~~~~~~~~~~~~~~~
 
-.. code-block:: shell
+.. code-block:: console
 
     $ python -m venv try-twisted
     $ . try-twisted/bin/activate

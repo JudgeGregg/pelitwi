@@ -3,7 +3,6 @@
 
 AUTHOR = 'Gregg Judge'
 SITENAME = 'Test Pelican'
-#SITEURL = ''
 SITEURL = 'https://judgegregg.github.io/pelitwi'
 
 PATH = 'content'
@@ -36,3 +35,36 @@ DEFAULT_PAGINATION = False
 
 # Twisted Customisation
 DISPLAY_PAGES_ON_MENU = False
+
+PREV_PAGE_TEMPLATE = """
+<h4>Previous topic</h4>
+<p class="topless">
+<a href={}>{}</a>
+</p>"""
+NEXT_PAGE_TEMPLATE = """
+<h4>Next topic</h4>
+<p class="topless">
+<a href={}>{}</a>
+</p>"""
+
+def get_relative_pages(pages, page):
+    prev_page = ''
+    next_page = ''
+    index = pages.index(page)
+    if index != 0:
+        prev = pages[index - 1]
+        prev_page = PREV_PAGE_TEMPLATE.format(SITEURL + "/" + prev.url, prev.title)
+    if index != len(pages) - 1:
+        next_ = pages[index + 1]
+        next_page = NEXT_PAGE_TEMPLATE.format(SITEURL + "/" + next_.url, next_.title)
+    return prev_page + next_page
+
+
+JINJA_FILTERS = {
+        "get_relative_pages": get_relative_pages,
+}
+PLUGINS = ["extract_toc"]
+
+
+# Dev conf FIXME
+SITEURL = 'http://localhost:8000'

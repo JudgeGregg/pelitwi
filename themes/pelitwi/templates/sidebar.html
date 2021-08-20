@@ -1,0 +1,8 @@
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+{% if page.toc %}
+{{ page.toc }}
+{% endif %}
+{{ pages|get_relative_pages(page)|safe }}
+</div>
+</div>
