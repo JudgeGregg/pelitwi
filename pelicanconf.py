@@ -67,4 +67,4 @@ PLUGINS = ["extract_toc"]
 
 
 # Dev conf FIXME
-SITEURL = 'http://localhost:8000'
+# SITEURL = 'http://localhost:8000'
