@@ -48,6 +48,7 @@ NEXT_PAGE_TEMPLATE = """
 </p>"""
 
 def get_relative_pages(pages, page):
+    pages = sorted(pages, key=lambda x: x.title)
     prev_page = ''
     next_page = ''
     index = pages.index(page)
