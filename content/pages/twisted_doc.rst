@@ -1,11 +1,8 @@
 Twisted Matrix Labs (Demo Site)
 -------------------------------
 
-:title: Twisted Matrix Labs (Demo Site)
 :URL: index.html
 :save_as: index.html
-
-.. contents:: Table Of Contents
 
 
 What is Twisted?
@@ -51,3 +48,5 @@ rather than being recreated on each request:
     reactor.run()
 
 See `Code Examples <{filename}/pages/code-examples.rst>`_.
+
+.. contents:: Table Of Contents
