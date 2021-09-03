@@ -1,6 +1,6 @@
 #!/bin/bash
 python utils/script.py
-cp -r ~/Projets/twisource/twistedmatrix.com/documents/current/_sources/* ~/Projets/pelitwi/content/pages/
+cp -r ~/Projects/Python/twisource/twistedmatrix.com/documents/current/_sources/* ~/Projects/Python/pelitwi/content/pages/
 find content/pages/ -name "index.html" -exec rm {} \;
 find content/pages/ -name "index.rst" -exec rm {} \;
 find content/pages/ -name "*.txt" -exec rm {} \;

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*- #
 
-AUTHOR = 'Gregg Judge'
-SITENAME = 'Test Pelican'
-SITEURL = 'https://judgegregg.github.io/pelitwi'
+AUTHOR = "Gregg Judge"
+SITENAME = "Test Pelican"
+SITEURL = "https://judgegregg.github.io/pelitwi"
 
-PATH = 'content'
+PATH = "content"
 
-TIMEZONE = 'Europe/Paris'
+TIMEZONE = "Europe/Paris"
 
-DEFAULT_LANG = 'en'
+DEFAULT_LANG = "en"
 
 # Feed generation is usually not desired when developing
 FEED_ALL_ATOM = None
@@ -19,19 +19,23 @@ AUTHOR_FEED_ATOM = None
 AUTHOR_FEED_RSS = None
 
 # Blogroll
-LINKS = (('Pelican', 'https://getpelican.com/'),
-         ('Python.org', 'https://www.python.org/'),
-         ('Jinja2', 'https://palletsprojects.com/p/jinja/'),
-         ('You can modify those links in your config file', '#'),)
+LINKS = (
+    ("Pelican", "https://getpelican.com/"),
+    ("Python.org", "https://www.python.org/"),
+    ("Jinja2", "https://palletsprojects.com/p/jinja/"),
+    ("You can modify those links in your config file", "#"),
+)
 
 # Social widget
-SOCIAL = (('You can add links in your config file', '#'),
-          ('Another social link', '#'),)
+SOCIAL = (
+    ("You can add links in your config file", "#"),
+    ("Another social link", "#"),
+)
 
 DEFAULT_PAGINATION = False
 
 # Uncomment following line if you want document-relative URLs when developing
-#RELATIVE_URLS = True
+# RELATIVE_URLS = True
 
 # Twisted Customisation
 DISPLAY_PAGES_ON_MENU = False
@@ -47,10 +51,11 @@ NEXT_PAGE_TEMPLATE = """
 <a href={}>{}</a>
 </p>"""
 
+
 def get_relative_pages(pages, page):
     pages = sorted(pages, key=lambda x: x.title)
-    prev_page = ''
-    next_page = ''
+    prev_page = ""
+    next_page = ""
     index = pages.index(page)
     if index != 0:
         prev = pages[index - 1]
@@ -62,10 +67,10 @@ def get_relative_pages(pages, page):
 
 
 JINJA_FILTERS = {
-        "get_relative_pages": get_relative_pages,
+    "get_relative_pages": get_relative_pages,
 }
 PLUGINS = ["extract_toc"]
 
 
 # Dev conf FIXME
-# SITEURL = 'http://localhost:8000'
+# SITEURL = "http://localhost:8000"
