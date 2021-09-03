@@ -8,6 +8,9 @@ print(TWISTED_DOCSOURCE_ROOT)
 
 
 def handle_file(root, filename):
+    if filename == "index.rst.txt":
+        print("skipping: " + filename)
+        return
     with open(os.path.join(root, filename)) as file_:
         lines = []
         for line in file_.readlines():
@@ -30,7 +33,7 @@ def handle_file(root, filename):
                 continue
             if line:
                 lines.append(line)
-        if not ".. contents:: Table Of Contents\n" in lines:
+        if ".. contents:: Table Of Contents\n" not in lines:
             lines.append("\n")
             lines.append(".. contents:: Table Of Contents\n")
         filename = filename.replace(".txt", "")
