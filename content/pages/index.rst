@@ -32,5 +32,7 @@ Contents:
 * `Twisted Words (IRC and XMPP) <{filename}/pages/words/index.rst>`_
    * `Developer Guides <{filename}/pages/words/howto/index.rst>`__
    * `Examples <{filename}/pages/words/examples/index.rst>`__
+* `API Reference <{filename}/pages/api/index.rst>`_
+* `Historical Documents <{filename}/pages/historic/index.rst>`_
 
 .. contents:: Table Of Contents
