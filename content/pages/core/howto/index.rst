@@ -1,6 +1,9 @@
 Developer Guides (Core)
 =======================
 
+:prev_page_slug: twisted-core
+:next_page_slug: the-vision-for-twisted
+
 - .. _core-howto-index-introduction:
 
   Introduction

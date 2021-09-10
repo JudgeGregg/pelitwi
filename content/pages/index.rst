@@ -3,6 +3,7 @@ Welcome to the Twisted documentation!
 
 :URL: index.html
 :save_as: index.html
+:next_page_slug: installing-twisted
 
 Contents:
 

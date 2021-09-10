@@ -1,15 +1,8 @@
-
-
 Twisted Core
 ============
 
-    :hidden:
-
-    howto/index
-    examples/index
-    specifications/index
-    development/index
-
+:prev_page_slug: installing-optional-dependencies
+:next_page_slug: developer-guides-core
 
 - `Developer guides <{filename}howto/index.rst>`_ : documentation on using Twisted Core to develop your own applications
 - `Examples <{filename}examples/index.rst>`_ : short code examples using Twisted Core
