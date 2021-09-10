@@ -225,9 +225,14 @@ div.topic {
 }
 
 p.topic-title {
-    font-size: 1.1em;
-    font-weight: bold;
-    margin-top: 10px;
+    font-size: 14px;
+    font-family: trebuchet ms,arial,verdana,'Bitstream Vera Sans',helvetica,sans-serif;
+    font-weight: normal;
+    letter-spacing: -0.018em;
+    color: #83A501;
+    border-width: 0 0 1px 0;
+    border-style: dotted;
+    border-color: #dddddd;
 }
 
 /* -- admonitions ----------------------------------------------------------- */
