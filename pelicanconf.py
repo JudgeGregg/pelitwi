@@ -53,24 +53,35 @@ NEXT_PAGE_TEMPLATE = """
 
 
 def get_relative_pages(pages, page):
-    pages = sorted(pages, key=lambda x: x.title)
-    prev_page = ""
-    next_page = ""
-    index = pages.index(page)
-    if index != 0:
-        prev = pages[index - 1]
-        prev_page = PREV_PAGE_TEMPLATE.format(SITEURL + "/" + prev.url, prev.title)
-    if index != len(pages) - 1:
-        next_ = pages[index + 1]
-        next_page = NEXT_PAGE_TEMPLATE.format(SITEURL + "/" + next_.url, next_.title)
-    return prev_page + next_page
+    prev_page = next_page = None
+    pages_dict = {}
+    for elem in pages:
+        pages_dict[elem.slug] = elem
+
+    if hasattr(page, "prev_page_slug"):
+        prev_page = pages_dict[page.prev_page_slug]
+    if hasattr(page, "next_page_slug"):
+        next_page = pages_dict[page.next_page_slug]
+    if prev_page:
+        prev_page = PREV_PAGE_TEMPLATE.format(
+            SITEURL + "/" + prev_page.url, prev_page.title
+        )
+    if next_page:
+        next_page = NEXT_PAGE_TEMPLATE.format(
+            SITEURL + "/" + next_page.url, next_page.title
+        )
+    result = ""
+    if prev_page:
+        result = result + prev_page
+    if next_page:
+        result = result + next_page
+    return result
 
 
 JINJA_FILTERS = {
     "get_relative_pages": get_relative_pages,
 }
 PLUGINS = ["extract_toc"]
-
 
 # Dev conf FIXME
 # SITEURL = "http://localhost:8000"
