@@ -170,7 +170,7 @@ input[type=submit] {
 
 /* Main navigation bar */
 #mainnav {
- background: #f7f7f7 url(../menu_grad.png) 0 0; /* Modified */
+ background: #f7f7f7 url(../images/menu_grad.png) 0 0; /* Modified */
  border: 0px solid #000; /* Modified */
  font: normal 10px trebuchet ms,verdana,'Bitstream Vera Sans',helvetica,arial,sans-serif; /* Modified */
  margin: 0; /* Modified */

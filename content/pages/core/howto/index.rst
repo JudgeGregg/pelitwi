@@ -1,6 +1,8 @@
 Developer Guides (Core)
 =======================
 
+:navbar_link: twisted-core
+
 - .. _core-howto-index-introduction:
 
   Introduction
