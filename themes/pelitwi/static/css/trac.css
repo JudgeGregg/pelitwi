@@ -204,7 +204,7 @@ input[type=submit] {
 }
 
 /* Context-dependent navigation links */
-#ctxtnav { background-image: url(../ctxt_grad.png); height: 30px; padding: 5px 61px 0 0; } /* Modified */
+#ctxtnav { background-image: url(../images/ctxt_grad.png); height: 30px; padding: 5px 61px 0 0; } /* Modified */
 #ctxtnav li ul {
  background: #f7f7f7;
  color: #ccc;
