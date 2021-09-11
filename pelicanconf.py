@@ -50,6 +50,9 @@ NEXT_PAGE_TEMPLATE = """
 <p class="topless">
 <a href={}>{}</a>
 </p>"""
+NAVBAR_LINK_TEMPLATE = """
+<li><a href="{}">{}</a></li>
+"""
 
 
 def get_relative_pages(pages, page):
@@ -78,8 +81,20 @@ def get_relative_pages(pages, page):
     return result
 
 
+def get_navbar_link(pages, page):
+    page_dict = {}
+    for elem in pages:
+        page_dict[elem.slug] = elem
+    page_to_link = page_dict.get(page.navbar_link)
+    if page_to_link:
+        return NAVBAR_LINK_TEMPLATE.format(
+            SITEURL + "/" + page_to_link.url, page_to_link.title
+        )
+
+
 JINJA_FILTERS = {
     "get_relative_pages": get_relative_pages,
+    "get_navbar_link": get_navbar_link,
 }
 PLUGINS = ["extract_toc"]
 
