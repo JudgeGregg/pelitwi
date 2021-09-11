@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Twisted Glossary</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Twisted Glossary</h1>
+        
+        <div class="entry-content">
+        <p id="core-howto-glossary-adaptee">adaptee</p>
+<blockquote>
+An object that has been adapted, also called &quot;original&quot; .  See <cite>Adapter &lt;core-howto-glossary-adapter&gt;</cite> .</blockquote>
+<p id="core-howto-glossary-adapter"><cite>Adapter &lt;twisted.python.components.Adapter&gt;</cite></p>
+<blockquote>
+An object whose sole purpose is to implement an Interface for another object.
+See <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/components-interfaces-and-adapters.html">Interfaces and Adapters</a> .</blockquote>
+<p id="core-howto-glossary-application"><cite>Application &lt;twisted.application.service.Application&gt;</cite></p>
+<blockquote>
+A <cite>twisted.application.service.Application</cite> .  There are
+HOWTOs on <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-basics.html">creating and manipulating</a> them as a
+system-administrator, as well as <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-the-twisted-application-framework.html">using</a> them in
+your code.</blockquote>
+<p id="core-howto-glossary-avatar">Avatar</p>
+<blockquote>
+(from <cite>Twisted Cred &lt;core-howto-glossary-cred&gt;</cite> ) business logic for specific user.
+For example, in <cite>PB &lt;core-howto-glossary-pb&gt;</cite> these are perspectives, in POP3 these
+are mailboxes, and so on.</blockquote>
+<p id="core-howto-glossary-banana"><cite>Banana &lt;twisted.spread.banana.Banana&gt;</cite></p>
+<blockquote>
+The low-level data marshalling layer of <cite>Twisted Spread &lt;core-howto-glossary-spread&gt;</cite> .
+See <cite>twisted.spread.banana</cite> .</blockquote>
+<p id="core-howto-glossary-broker"><cite>Broker &lt;twisted.spread.pb.Broker&gt;</cite></p>
+<blockquote>
+A <cite>twisted.spread.pb.Broker</cite> , the object request
+broker for <cite>Twisted Spread &lt;core-howto-glossary-spread&gt;</cite> .</blockquote>
+<p id="core-howto-glossary-cache">cache</p>
+<blockquote>
+A way to store data in readily accessible place for later reuse. Caching data
+is often done because the data is expensive to produce or access. Caching data
+risks being stale, or out of sync with the original data.</blockquote>
+<p id="core-howto-glossary-component">component</p>
+<blockquote>
+A special kind of (persistent) <a class="reference external" href="{filename}twisted.python.components.Adapter.rst">Adapter</a> that works with a <cite>twisted.python.components.Componentized</cite> .  See also <cite>Interfaces and Adapters &lt;components&gt;</cite> .</blockquote>
+<p id="core-howto-glossary-componentized"><cite>Componentized &lt;twisted.python.components.Componentized&gt;</cite></p>
+<blockquote>
+A Componentized object is a collection of information, separated
+into domain-specific or role-specific instances, that all stick
+together and refer to each other.
+Each object is an <cite>Adapter &lt;twisted.python.components.Adapter&gt;</cite> , which, in the
+context of Componentized, we call &quot;components&quot; .  See also <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/components-interfaces-and-adapters.html">Interfaces and Adapters</a> .</blockquote>
+<p id="core-howto-glossary-conch"><cite>conch &lt;twisted.conch&gt;</cite></p>
+<blockquote>
+Twisted's SSH implementation.</blockquote>
+<p id="core-howto-glossary-connector">Connector</p>
+<blockquote>
+Object used to interface between client connections and protocols, usually
+used with a <cite>twisted.internet.protocol.ClientFactory</cite>
+to give you control over how a client connection reconnects.  See <cite>twisted.internet.interfaces.IConnector</cite> and <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-clients.html">Writing Clients</a> .</blockquote>
+<p id="core-howto-glossary-consumer">Consumer</p>
+<blockquote>
+An object that consumes data from a <cite>Producer &lt;core-howto-glossary-producer&gt;</cite> .  See
+<cite>twisted.internet.interfaces.IConsumer</cite> .</blockquote>
+<p id="core-howto-glossary-cred">Cred</p>
+<blockquote>
+Twisted's authentication API, <cite>twisted.cred</cite> .  See
+<a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/cred-pluggable-authentication.html">Introduction to Twisted Cred</a> and
+<a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/authentication-with-perspective-broker.html">Twisted Cred usage</a> .</blockquote>
+<p id="core-howto-glossary-credentials">credentials</p>
+<blockquote>
+A username/password, public key, or some other information used for
+authentication.</blockquote>
+<p id="core-howto-glossary-credential-checker">credential checker</p>
+<blockquote>
+Where authentication actually happens.  See
+<cite>ICredentialsChecker &lt;twisted.cred.checkers.ICredentialsChecker&gt;</cite> .</blockquote>
+<p id="core-howto-glossary-cvstoys">CVSToys</p>
+<blockquote>
+A nifty set of tools for CVS, available at <a class="reference external" href="http://twistedmatrix.com/users/acapnotic/wares/code/CVSToys/">http://twistedmatrix.com/users/acapnotic/wares/code/CVSToys/</a> .</blockquote>
+<p id="core-howto-glossary-daemon">Daemon</p>
+<blockquote>
+A background process that does a job or handles client requests.
+<em>Daemon</em> is a Unix term; <em>service</em> is the Windows equivalent.</blockquote>
+<p id="core-howto-glossary-deferred"><cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite></p>
+<blockquote>
+An instance of <cite>twisted.internet.defer.Deferred</cite> , an
+abstraction for handling chains of callbacks and error handlers
+(&quot;errbacks&quot; ).
+See the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deferred-reference.html">Deferring Execution</a> HOWTO.</blockquote>
+<p id="core-howto-glossary-enterprise">Enterprise</p>
+<blockquote>
+Twisted's RDBMS support.  It contains <cite>twisted.enterprise.adbapi</cite> for asynchronous access to any
+standard DB-API 2.0 module. See <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/twistedenterpriseadbapi-twisted-rdbms-support.html">Introduction to Twisted Enterprise</a> for more details.</blockquote>
+<p id="core-howto-glossary-errback">errback</p>
+<blockquote>
+A callback attached to a <cite>Deferred &lt;core-howto-glossary-deferred&gt;</cite> with
+<tt class="docutils literal">.addErrback</tt> to handle errors.</blockquote>
+<p id="core-howto-glossary-factory"><cite>Factory &lt;twisted.internet.protocol.Factory&gt;</cite></p>
+<blockquote>
+In general, an object that constructs other objects.  In Twisted, a Factory
+usually refers to a <cite>twisted.internet.protocol.Factory</cite> , which constructs
+<cite>Protocol &lt;core-howto-glossary-protocol&gt;</cite> instances for incoming or outgoing
+connections.  See <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-servers.html">Writing Servers</a> and <cite>Writing Clients &lt;clients&gt;</cite> .</blockquote>
+<p id="core-howto-glossary-failure"><cite>Failure &lt;twisted.python.failure.Failure&gt;</cite></p>
+<blockquote>
+Basically, an asynchronous exception that contains traceback information;
+these are used for passing errors through asynchronous callbacks.</blockquote>
+<p id="core-howto-glossary-im">im</p>
+<blockquote>
+Abbreviation of &quot;(Twisted) <cite>Instance Messenger &lt;core-howto-glossary-instancemessenger&gt;</cite>&quot; .</blockquote>
+<p id="core-howto-glossary-instancemessenger">Instance Messenger</p>
+<blockquote>
+Instance Messenger is a multi-protocol chat program that comes with
+Twisted.  It can communicate via TOC with the AOL servers, via IRC, as well as
+via <cite>PB &lt;core-howto-glossary-perspectivebroker&gt;</cite> with
+<cite>Twisted Words &lt;core-howto-glossary-words&gt;</cite> .  See <cite>twisted.words.im</cite> .</blockquote>
+<p id="core-howto-glossary-interface">Interface</p>
+<blockquote>
+A class that defines and documents methods that a class conforming to that
+interface needs to have.  A collection of core <cite>twisted.internet</cite> interfaces can
+be found in <cite>twisted.internet.interfaces</cite> .  See also <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/components-interfaces-and-adapters.html">Interfaces and Adapters</a> .</blockquote>
+<p id="core-howto-glossary-jelly">Jelly</p>
+<blockquote>
+The serialization layer for <cite>Twisted Spread &lt;core-howto-glossary-spread&gt;</cite> , although it
+can be used separately from Twisted Spread as well.  It is similar in purpose
+to Python's standard <tt class="docutils literal">pickle</tt> module, but is more
+network-friendly, and depends on a separate marshaller (<cite>Banana &lt;core-howto-glossary-banana&gt;</cite> , in most cases).  See <cite>twisted.spread.jelly</cite> .</blockquote>
+<p id="core-howto-glossary-manhole">Manhole</p>
+<blockquote>
+A debugging/administration interface to a Twisted application.</blockquote>
+<p id="core-howto-glossary-microdom">Microdom</p>
+<blockquote>
+A partial DOM implementation using <cite>SUX &lt;core-howto-glossary-sux&gt;</cite> .  It is simple and
+pythonic, rather than strictly standards-compliant.  See <cite>twisted.web.microdom</cite> .</blockquote>
+<p id="core-howto-glossary-names">Names</p>
+<blockquote>
+Twisted's DNS server, found in <cite>twisted.names</cite> .</blockquote>
+<p id="core-howto-glossary-nevow">Nevow</p>
+<blockquote>
+The successor to <cite>Woven &lt;core-howto-glossary-woven&gt;</cite> ; available from <a class="reference external" href="http://launchpad.net/nevow">Divmod</a> .</blockquote>
+<p id="core-howto-glossary-pb">PB</p>
+<blockquote>
+Abbreviation of &quot;<cite>Perspective Broker &lt;core-howto-glossary-perspectivebroker&gt;</cite>&quot; .</blockquote>
+<p id="core-howto-glossary-perspectivebroker">Perspective Broker</p>
+<blockquote>
+The high-level object layer of Twisted <cite>Spread &lt;core-howto-glossary-spread&gt;</cite> ,
+implementing semantics for method calling and object copying, caching, and
+referencing.  See <cite>twisted.spread.pb</cite> .</blockquote>
+<p id="core-howto-glossary-portal">Portal</p>
+<blockquote>
+Glues <cite>credential checkers &lt;core-howto-glossary-credential-checker&gt;</cite> and
+<cite>realm &lt;core-howto-glossary-realm&gt;</cite> s together.</blockquote>
+<p id="core-howto-glossary-producer">Producer</p>
+<blockquote>
+An object that generates data a chunk at a time, usually to be processed by a
+<cite>Consumer &lt;core-howto-glossary-consumer&gt;</cite> .  See
+<cite>twisted.internet.interfaces.IProducer</cite> .</blockquote>
+<p id="core-howto-glossary-protocol"><cite>Protocol &lt;twisted.internet.protocol.Protocol&gt;</cite></p>
+<blockquote>
+In general each network connection has its own Protocol instance to manage
+connection-specific state.  There is a collection of standard
+protocol implementations in <cite>twisted.protocols</cite> .  See
+also <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-servers.html">Writing Servers</a> and <cite>Writing Clients &lt;clients&gt;</cite> .</blockquote>
+<p id="core-howto-glossary-psu">PSU</p>
+<blockquote>
+There is no PSU.</blockquote>
+<p id="core-howto-glossary-reactor">Reactor</p>
+<blockquote>
+The core event-loop of a Twisted application.  See
+<a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/reactor-overview.html">Reactor Basics</a> .</blockquote>
+<p id="core-howto-glossary-reality">Reality</p>
+<blockquote>
+See &quot;<cite>Twisted Reality &lt;core-howto-glossary-twistedreality&gt;</cite>&quot;</blockquote>
+<p id="core-howto-glossary-realm">realm</p>
+<blockquote>
+(in <cite>Twisted Cred &lt;core-howto-glossary-cred&gt;</cite> ) stores <cite>avatars &lt;core-howto-glossary-avatar&gt;</cite>
+and perhaps general business logic.  See
+<cite>IRealm &lt;twisted.cred.portal.IRealm&gt;</cite> .</blockquote>
+<p id="core-howto-glossary-resource"><cite>Resource &lt;twisted.web.resource.Resource&gt;</cite></p>
+<blockquote>
+A <cite>twisted.web.resource.Resource</cite> , which are served
+by Twisted Web.  Resources can be as simple as a static file on disk, or they
+can have dynamically generated content.</blockquote>
+<p id="core-howto-glossary-service">Service</p>
+<blockquote>
+A <cite>twisted.application.service.Service</cite> .  See <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-the-twisted-application-framework.html">Application howto</a> for a description of how they
+relate to <cite>Applications &lt;core-howto-glossary-application&gt;</cite> .</blockquote>
+<p id="core-howto-glossary-spread">Spread</p>
+<blockquote>
+Twisted Spread is
+Twisted's remote-object suite.  It consists of three layers: <cite>Perspective Broker &lt;core-howto-glossary-perspectivebroker&gt;</cite> , <cite>Jelly &lt;core-howto-glossary-jelly&gt;</cite>
+and <a class="reference external" href="{filename}core-howto-glossary-banana.rst">Banana.</a> See <cite>Writing Applications with Perspective Broker &lt;pb&gt;</cite> .</blockquote>
+<p id="core-howto-glossary-sux">SUX</p>
+<blockquote>
+<em>S</em> mall <em>U</em> ncomplicated <em>X</em> ML, Twisted's simple XML
+parser written in pure Python.  See <cite>twisted.web.sux</cite> .</blockquote>
+<p id="core-howto-glossary-tac">TAC</p>
+<blockquote>
+A <em>T</em> wisted <em>A</em> pplication <em>C</em> onfiguration is a Python
+source file, generally with the <em>.tac</em> extension, which defines
+configuration to make an application runnable using <tt class="docutils literal">twistd</tt> .</blockquote>
+<p id="core-howto-glossary-tap">TAP</p>
+<blockquote>
+<em>T</em> wisted <em>A</em> pplication <em>P</em> ickle (no longer supported), or simply just a*T* wisted <em>AP</em> plication.  A serialised application that was created
+with <tt class="docutils literal">mktap</tt> (no longer supported) and runnable by <tt class="docutils literal">twistd</tt> .  See`Using the Utilities &lt;{filename}basics.rst&gt;`_ .</blockquote>
+<p id="core-howto-glossary-trial">Trial</p>
+<blockquote>
+<cite>twisted.trial</cite> , Twisted's unit-testing framework,
+based on the <tt class="docutils literal">unittest</tt> standard library module.  See also <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-tests-for-twisted-code-using-trial.html">Writing tests for Twisted code</a> .</blockquote>
+<p id="core-howto-glossary-twistedmatrixlaboratories">Twisted Matrix Laboratories</p>
+<blockquote>
+The team behind Twisted.  <a class="reference external" href="http://twistedmatrix.com/">http://twistedmatrix.com/</a> .</blockquote>
+<p id="core-howto-glossary-twistedreality">Twisted Reality</p>
+<blockquote>
+In days of old, the Twisted Reality multiplayer text-based interactive-fiction
+system was the main focus of Twisted Matrix Labs; Twisted, the general networking
+framework, grew out of Reality's need for better network functionality. Twisted
+Reality has been superseded by the <a class="reference external" href="http://launchpad.net/imaginary">Imaginary</a> project.</blockquote>
+<p id="core-howto-glossary-usage"><cite>usage &lt;twisted.python.usage&gt;</cite></p>
+<blockquote>
+The <cite>twisted.python.usage</cite> module, a replacement for
+the standard <tt class="docutils literal">getopt</tt> module for parsing command-lines which is much
+easier to work with.  See <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/parsing-command-lines-with-usageoptions.html">Parsing command-lines</a> .</blockquote>
+<p id="core-howto-glossary-words">Words</p>
+<blockquote>
+Twisted Words is a multi-protocol chat server that uses the <cite>Perspective Broker &lt;core-howto-glossary-perspectivebroker&gt;</cite> protocol as its native
+communication style.  See <cite>twisted.words</cite> .</blockquote>
+<p id="core-howto-glossary-woven">Woven</p>
+<blockquote>
+<em>W</em> eb <em>O</em> bject <em>V</em> isualization <em>En</em> vironment.
+A templating system previously, but no longer, included with Twisted.  Woven
+has largely been superseded by <a class="reference external" href="http://launchpad.net/nevow">Divmod Nevow</a> .</blockquote>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

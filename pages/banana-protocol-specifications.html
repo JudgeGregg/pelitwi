@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Banana Protocol Specifications</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Banana Protocol Specifications</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id1">Introduction</a></h2>
+<p>Banana is an efficient, extendable protocol for sending and receiving s-expressions.
+A s-expression in this context is a list composed of bytes, integers, large integers, floats and/or s-expressions.
+Unicode is not supported (but can be encoded to and decoded from bytes on the way into and out of Banana).
+Unsupported types must be converted into a supported type before sending them with Banana.</p>
+</div>
+<div class="section" id="banana-encodings">
+<h2><a class="toc-backref" href="#id2">Banana Encodings</a></h2>
+<p>The banana protocol is a stream of data composed of elements. Each element has the
+following general structure - first, the length of element encoded in base-128, least significant
+bit first. For example length 4674 will be sent as <tt class="docutils literal">0x42 0x24</tt> . For certain element
+types the length will be omitted (e.g. float) or have a different meaning (it is the actual
+value of integer elements).</p>
+<p>Following the length is a delimiter byte, which tells us what kind of element this
+is. Depending on the element type, there will then follow the number of bytes specified
+in the length. The byte's high-bit will always be set, so that we can differentiate
+between it and the length (since the length bytes use 128-base, their high bit will
+never be set).</p>
+</div>
+<div class="section" id="element-types">
+<h2><a class="toc-backref" href="#id3">Element Types</a></h2>
+<p>Given a series of bytes that gave us length N, these are the different delimiter bytes:</p>
+<p>List -- 0x80</p>
+<blockquote>
+The following bytes are a list of N elements.  Lists may be nested,
+and a child list counts as only one element to its parent (regardless
+of how many elements the child list contains).</blockquote>
+<p>Integer -- 0x81</p>
+<blockquote>
+The value of this element is the positive integer N. Following bytes are not part of this element. Integers can have values of 0 &lt;= N &lt;= 2147483647.</blockquote>
+<p>String -- 0x82</p>
+<blockquote>
+The following N bytes are a string element.</blockquote>
+<p>Negative Integer -- 0x83</p>
+<blockquote>
+The value of this element is the integer N * -1, i.e. -N. Following bytes are not part of this element. Negative integers can have values of 0 &gt;= -N &gt;= -2147483648.</blockquote>
+<p>Float - 0x84</p>
+<blockquote>
+The next 8 bytes are the float encoded in IEEE 754 floating-point "double format" bit layout.
+No length bytes should have been defined.</blockquote>
+<p>Large Integer -- 0x85</p>
+<blockquote>
+The value of this element is the positive large integer N. Following bytes are not part of this element. Large integers have no size limitation.</blockquote>
+<p>Large Negative Integer -- 0x86</p>
+<blockquote>
+The value of this element is the negative large integer -N. Following bytes are not part of this element. Large integers have no size limitation.</blockquote>
+<p>Large integers are intended for arbitrary length integers. Regular integers types (positive and negative) are limited to 32-bit values.</p>
+<div class="section" id="examples">
+<h3><a class="toc-backref" href="#id4">Examples</a></h3>
+<p>Here are some examples of elements and their encodings - the type bytes are marked in bold:</p>
+<p><tt class="docutils literal">1</tt></p>
+<blockquote>
+<tt class="docutils literal">0x01 **0x81**</tt></blockquote>
+<p><tt class="docutils literal"><span class="pre">-1</span></tt></p>
+<blockquote>
+<tt class="docutils literal">0x01 **0x83**</tt></blockquote>
+<p><tt class="docutils literal">1.5</tt></p>
+<blockquote>
+<tt class="docutils literal">**0x84**  0x3f 0xf8 0x00 0x00 0x00 0x00 0x00 0x00</tt></blockquote>
+<p><tt class="docutils literal">"hello"</tt></p>
+<blockquote>
+<tt class="docutils literal">0x05 **0x82**  0x68 0x65 0x6c 0x6c 0x6f</tt></blockquote>
+<p><tt class="docutils literal">[]</tt></p>
+<blockquote>
+<tt class="docutils literal">0x00 **0x80**</tt></blockquote>
+<p><tt class="docutils literal">[1, 23]</tt></p>
+<blockquote>
+<tt class="docutils literal">0x02 **0x80**  0x01 **0x81**  0x17 **0x81**</tt></blockquote>
+<p><tt class="docutils literal">123456789123456789</tt></p>
+<blockquote>
+<tt class="docutils literal">0x15 0x3e 0x41 0x66 0x3a 0x69 0x26 0x5b 0x01 **0x85**</tt></blockquote>
+<p><tt class="docutils literal">[1, <span class="pre">["hello"]]</span></tt></p>
+<blockquote>
+<tt class="docutils literal">0x02 **0x80**  0x01 **0x81**  0x01 **0x80**  0x05 **0x82**  0x68 0x65 0x6c 0x6c 0x6f</tt></blockquote>
+</div>
+</div>
+<div class="section" id="profiles">
+<h2><a class="toc-backref" href="#id5">Profiles</a></h2>
+<p>The Banana protocol is extendable. Therefore, it supports the concept of profiles. Profiles allow
+developers to extend the banana protocol, adding new element types, while still keeping backwards
+compatibility with implementations that don't support the extensions. The profile used in each
+session is determined at the handshake stage (see below.)</p>
+<p>A profile is specified by a unique string. This specification defines two profiles
+- <tt class="docutils literal">"none"</tt> and <tt class="docutils literal">"pb"</tt> . The <tt class="docutils literal">"none"</tt> profile is the standard
+profile that should be supported by all Banana implementations.
+Additional profiles may be added in the future.</p>
+<p>Extensions defined by a profile may only be used if that profile has been selected by client and server.</p>
+<div class="section" id="the-none-profile">
+<h3><a class="toc-backref" href="#id6">The <tt class="docutils literal">"none"</tt>  Profile</a></h3>
+<p>The <tt class="docutils literal">"none"</tt> profile is identical to the delimiter types listed above. It is highly recommended
+that all Banana clients and servers support the <tt class="docutils literal">"none"</tt> profile.</p>
+</div>
+<div class="section" id="the-pb-profile">
+<h3><a class="toc-backref" href="#id7">The <tt class="docutils literal">"pb"</tt>  Profile</a></h3>
+<p>The <tt class="docutils literal">"pb"</tt> profile is intended for use with the Perspective Broker protocol, that runs on top
+of Banana. Basically, it converts commonly used PB strings into shorter versions, thus
+minimizing bandwidth usage. It starts with a single byte, which tells us to which string element
+to convert it, and ends with the delimiter byte, <tt class="docutils literal">0x87</tt> , which should not be prefixed
+by a length.</p>
+<dl class="docutils">
+<dt>0x01</dt>
+<dd>'None'</dd>
+<dt>0x02</dt>
+<dd>'class'</dd>
+<dt>0x03</dt>
+<dd>'dereference'</dd>
+<dt>0x04</dt>
+<dd>'reference'</dd>
+<dt>0x05</dt>
+<dd>'dictionary'</dd>
+<dt>0x06</dt>
+<dd>'function'</dd>
+<dt>0x07</dt>
+<dd>'instance'</dd>
+<dt>0x08</dt>
+<dd>'list'</dd>
+<dt>0x09</dt>
+<dd>'module'</dd>
+<dt>0x0a</dt>
+<dd>'persistent'</dd>
+<dt>0x0b</dt>
+<dd>'tuple'</dd>
+<dt>0x0c</dt>
+<dd>'unpersistable'</dd>
+<dt>0x0d</dt>
+<dd>'copy'</dd>
+<dt>0x0e</dt>
+<dd>'cache'</dd>
+<dt>0x0f</dt>
+<dd>'cached'</dd>
+<dt>0x10</dt>
+<dd>'remote'</dd>
+<dt>0x11</dt>
+<dd>'local'</dd>
+<dt>0x12</dt>
+<dd>'lcache'</dd>
+<dt>0x13</dt>
+<dd>'version'</dd>
+<dt>0x14</dt>
+<dd>'login'</dd>
+<dt>0x15</dt>
+<dd>'password'</dd>
+<dt>0x16</dt>
+<dd>'challenge'</dd>
+<dt>0x17</dt>
+<dd>'logged_in'</dd>
+<dt>0x18</dt>
+<dd>'not_logged_in'</dd>
+<dt>0x19</dt>
+<dd>'cachemessage'</dd>
+<dt>0x1a</dt>
+<dd>'message'</dd>
+<dt>0x1b</dt>
+<dd>'answer'</dd>
+<dt>0x1c</dt>
+<dd>'error'</dd>
+<dt>0x1d</dt>
+<dd>'decref'</dd>
+<dt>0x1e</dt>
+<dd>'decache'</dd>
+<dt>0x1f</dt>
+<dd>'uncache'</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="protocol-handshake-and-behaviour">
+<h2><a class="toc-backref" href="#id8">Protocol Handshake and Behaviour</a></h2>
+<p>The initiating side of the connection will be referred to as "client" , and the other
+side as "server" .</p>
+<p>Upon connection, the server will send the client a list of string elements, signifying
+the profiles it supports. It is recommended that <tt class="docutils literal">"none"</tt> be included in this list. The client
+then sends the server a string from this list, telling the server which profile it wants to
+use. At this point the whole session will use this profile.</p>
+<p>Once a profile has been established, the two sides may start exchanging elements. There is no
+limitation on order or dependencies of messages. Any such limitation (e.g. "server can only send an element to client in response to a request from client" ) is application specific.</p>
+<p>Upon receiving illegal messages, failed handshakes, etc., a Banana client or server should
+close its connection.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id1">Introduction</a></li>
+<li><a class="reference internal" href="#banana-encodings" id="id2">Banana Encodings</a></li>
+<li><a class="reference internal" href="#element-types" id="id3">Element Types</a><ul>
+<li><a class="reference internal" href="#examples" id="id4">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#profiles" id="id5">Profiles</a><ul>
+<li><a class="reference internal" href="#the-none-profile" id="id6">The <tt class="docutils literal">"none"</tt>  Profile</a></li>
+<li><a class="reference internal" href="#the-pb-profile" id="id7">The <tt class="docutils literal">"pb"</tt>  Profile</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#protocol-handshake-and-behaviour" id="id8">Protocol Handshake and Behaviour</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Overview of Twisted IM</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Overview of Twisted IM</h1>
+        
+        <div class="entry-content">
+        <p>Twisted IM (Instance Messenger) is a multi-protocol chat
+framework, based on the Twisted framework we've all come to know
+and love. It's fairly simple and extensible in two directions -
+it's pretty easy to add new protocols, and it's also quite easy
+to add new front-ends.</p>
+<div class="section" id="code-flow">
+<h2><a class="toc-backref" href="#id1">Code flow</a></h2>
+<div class="section" id="accountmanager">
+<h3><a class="toc-backref" href="#id2">AccountManager</a></h3>
+<p>The control flow starts at the relevant subclass of <cite>baseaccount.AccountManager &lt;twisted.words.im.baseaccount.AccountManager&gt;</cite> .
+The AccountManager is responsible for, well, managing accounts
+- remembering what accounts are available, their
+settings, adding and removal of accounts, and making accounts
+log on at startup.</p>
+<p>This would be a good place to start your interface, load a
+list of accounts from disk and tell them to login. Most of the
+method names in <cite>AccountManager &lt;twisted.words.im.baseaccount.AccountManager&gt;</cite>
+are pretty self-explanatory, and your subclass can override
+whatever it wants, but you <em>need</em> to override <tt class="docutils literal">__init__</tt> . Something like
+this:</p>
+<div class="highlight"><pre><span></span><span class="o">...</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chatui</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># Your subclass of basechat.ChatUI</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># Load account list</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">:</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">logOn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chatui</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="chatui">
+<h3><a class="toc-backref" href="#id3">ChatUI</a></h3>
+<p>Account objects talk to the user via a subclass of <cite>basechat.ChatUI &lt;twisted.words.im.basechat.ChatUI&gt;</cite> .
+This class keeps track of all the various conversations that
+are currently active, so that when an account receives and
+incoming message, it can put that message in its correct
+context.</p>
+<p>How much of this class you need to override depends on what
+you need to do. You will need to override
+<tt class="docutils literal">getConversation</tt> (a one-on-one conversation, like
+an IRC DCC chat) and <tt class="docutils literal">getGroupConversation</tt> (a
+multiple user conversation, like an IRC channel). You might
+want to override <tt class="docutils literal">getGroup</tt> and
+<tt class="docutils literal">getPerson</tt> .</p>
+<p>The main problem with the default versions of the above
+routines is that they take a parameter, <tt class="docutils literal">Class</tt> ,
+which defaults to an abstract implementation of that class -
+for example, <tt class="docutils literal">getConversation</tt> has a
+<tt class="docutils literal">Class</tt> parameter that defaults to <cite>basechat.Conversation &lt;twisted.words.im.basechat.Conversation&gt;</cite> which
+raises a lot of <tt class="docutils literal">NotImplementedError</tt> s. In your
+subclass, override the method with a new method whose Class
+parameter defaults to your own implementation of
+<tt class="docutils literal">Conversation</tt> , that simply calls the parent
+class' implementation.</p>
+</div>
+<div class="section" id="conversation-and-groupconversation">
+<h3><a class="toc-backref" href="#id4">Conversation and GroupConversation</a></h3>
+<p>These classes are where your interface meets the chat
+protocol. Chat protocols get a message, find the appropriate
+<tt class="docutils literal">Conversation</tt> or <tt class="docutils literal">GroupConversation</tt>
+object, and call its methods when various interesting things
+happen.</p>
+<p>Override whatever methods you want to get the information
+you want to display. You must override the <tt class="docutils literal">hide</tt>
+and <tt class="docutils literal">show</tt> methods, however - they are called
+frequently and the default implementation raises
+<tt class="docutils literal">NotImplementedError</tt> .</p>
+</div>
+<div class="section" id="accounts">
+<h3><a class="toc-backref" href="#id5">Accounts</a></h3>
+<p>An account is an instance of a subclass of <cite>basesupport.AbstractAccount &lt;twisted.words.im.basesupport.AbstractAccount&gt;</cite> .
+For more details and sample code, see the various
+<tt class="docutils literal">*support</tt> files in <tt class="docutils literal">twisted.words.im</tt> .</p>
+
+</div>
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#code-flow" id="id1">Code flow</a><ul>
+<li><a class="reference internal" href="#accountmanager" id="id2">AccountManager</a></li>
+<li><a class="reference internal" href="#chatui" id="id3">ChatUI</a></li>
+<li><a class="reference internal" href="#conversation-and-groupconversation" id="id4">Conversation and GroupConversation</a></li>
+<li><a class="reference internal" href="#accounts" id="id5">Accounts</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

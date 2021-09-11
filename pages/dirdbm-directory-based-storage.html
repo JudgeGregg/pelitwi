@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - DirDBM: Directory-based Storage</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>DirDBM: Directory-based Storage</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="dirdbm-dirdbm">
+<h2><a class="toc-backref" href="#id1">dirdbm.DirDBM</a></h2>
+<p><cite>twisted.persisted.dirdbm.DirDBM</cite> is a DBM-like storage system.
+That is, it stores mappings between keys
+and values, like a Python dictionary, except that it stores the values in files
+in a directory - each entry is a different file. The keys must always be strings,
+as are the values. Other than that, <cite>DirDBM &lt;twisted.persisted.dirdbm.DirDBM&gt;</cite>
+objects act just like Python dictionaries.</p>
+<p><cite>DirDBM &lt;twisted.persisted.dirdbm.DirDBM&gt;</cite> is useful for cases
+when you want to store small amounts of data in an organized fashion, without having
+to deal with the complexity of a RDBMS or other sophisticated database. It is simple,
+easy to use, cross-platform, and doesn't require any external C libraries, unlike
+Python's built-in DBM modules.</p>
+<div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">twisted.persisted</span> <span class="kn">import</span> <span class="n">dirdbm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">dirdbm</span><span class="o">.</span><span class="n">DirDBM</span><span class="p">(</span><span class="s2">"/tmp/dir"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s2">"librarian"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"ook"</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s2">"librarian"</span><span class="p">]</span>
+<span class="go">'ook'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+<span class="go">['librarian']</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">d</span><span class="p">[</span><span class="s2">"librarian"</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+<span class="go">[]</span>
+</pre></div>
+</div>
+<div class="section" id="dirdbm-shelf">
+<h2><a class="toc-backref" href="#id2">dirdbm.Shelf</a></h2>
+<p>Sometimes it is necessary to persist more complicated objects than strings.
+With some care, <cite>dirdbm.Shelf &lt;twisted.persisted.dirdbm.Shelf&gt;</cite>
+can transparently persist
+them. <tt class="docutils literal">Shelf</tt> works exactly like <tt class="docutils literal">DirDBM</tt> , except that
+the values (but not the keys) can be arbitrary picklable objects. However,
+notice that mutating an object after it has been stored in the  <tt class="docutils literal">Shelf</tt> has no effect on the Shelf.
+When mutating objects, it is necessary to explicitly store them back in the <tt class="docutils literal">Shelf</tt>
+afterwards:</p>
+<div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">twisted.persisted</span> <span class="kn">import</span> <span class="n">dirdbm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">dirdbm</span><span class="o">.</span><span class="n">Shelf</span><span class="p">(</span><span class="s2">"/tmp/dir2"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span>
+<span class="go">[1, 2]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span>
+<span class="go">[1, 2]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span>
+<span class="go">[1, 2, 3]</span>
+</pre></div>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#dirdbm-dirdbm" id="id1">dirdbm.DirDBM</a></li>
+<li><a class="reference internal" href="#dirdbm-shelf" id="id2">dirdbm.Shelf</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

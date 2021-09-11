@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - The Evolution of Finger: configuration of the finger service</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>The Evolution of Finger: configuration of the finger service</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id1">Introduction</a></h2>
+<p>This is the eleventh part of the Twisted tutorial <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/twisted-from-scratch-or-the-evolution-of-finger.html">Twisted from Scratch, or The Evolution of Finger</a> .</p>
+<p>In this part, we make it easier for non-programmers to configure a finger server.
+Plugins are discussed further in the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-twisted-plugin-system.html">Twisted Plugin System</a> howto.
+Writing twistd plugins is covered in <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-a-twistd-plugin.html">Writing a twistd Plugin</a>, and .tac applications are covered in <cite>Using the Twisted Application Framework &lt;../application&gt;</cite>.</p>
+</div>
+<div class="section" id="plugins">
+<h2><a class="toc-backref" href="#id2">Plugins</a></h2>
+<p>So far, the user had to be somewhat of a programmer to be able to configure
+stuff. Maybe we can eliminate even that? Move old code
+to <tt class="docutils literal">finger/__init__.py</tt> and...</p>
+<p>Full source code for finger module here:</p>
+<p><cite>finger.py &lt;listings/finger/finger/finger.py&gt;</cite></p>
+<p><cite>tap.py &lt;listings/finger/finger/tap.py&gt;</cite></p>
+<p>And register it all:</p>
+<p><cite>finger_tutorial.py &lt;listings/finger/twisted/plugins/finger_tutorial.py&gt;</cite></p>
+<p>Note that the second argument to <cite>ServiceMaker &lt;twisted.application.service.ServiceMaker&gt;</cite> ,``finger.tap`` , is a reference to a module
+(<tt class="docutils literal">finger/tap.py</tt> ), not to a filename.</p>
+<p>And now, the following works</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>sudo twistd -n finger --file<span class="o">=</span>/etc/users --ircnick<span class="o">=</span>fingerbot
+</pre></div>
+<p>For more details about this, see the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-a-twistd-plugin.html">twistd plugin documentation</a> .</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id1">Introduction</a></li>
+<li><a class="reference internal" href="#plugins" id="id2">Plugins</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

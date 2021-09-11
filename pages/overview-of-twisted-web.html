@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Overview of Twisted Web</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Overview of Twisted Web</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id1">Introduction</a></h2>
+<p>Twisted Web is a web application server written in pure
+Python, with APIs at multiple levels of abstraction to
+facilitate different kinds of web programming.</p>
+</div>
+<div class="section" id="twisted-web-s-structure">
+<h2><a class="toc-backref" href="#id2">Twisted Web's Structure</a></h2>
+<img alt="" src="../img/web-overview.png"/>
+<p>When
+the Web Server receives a request from a Client, it creates
+a Request object and passes it on to the Resource system.
+The Resource system dispatches to the appropriate Resource
+object based on what path was requested by the client. The
+Resource is asked to render itself, and the result is
+returned to the client.</p>
+</div>
+<div class="section" id="resources">
+<h2><a class="toc-backref" href="#id3">Resources</a></h2>
+<p>Resources are the lowest-level abstraction for applications
+in the Twisted web server. Each Resource is a 1:1 mapping with
+a path that is requested: you can think of a Resource as a
+single "page" to be rendered. The interface for making
+Resources is very simple; they must have a method named
+<tt class="docutils literal">render</tt> which takes a single argument, which is the
+Request object (an instance of <cite>twisted.web.server.Request</cite> ). This render
+method must return a string, which will be returned to the web
+browser making the request. Alternatively, they can return a
+special constant, <cite>twisted.web.server.NOT_DONE_YET</cite> , which tells
+the web server not to close the connection; you must then use
+<tt class="docutils literal">request.write(data)</tt> to render the
+page, and call <tt class="docutils literal">request.finish()</tt>
+whenever you're done.</p>
+</div>
+<div class="section" id="web-programming-with-twisted-web">
+<h2><a class="toc-backref" href="#id4">Web programming with Twisted Web</a></h2>
+<p>Web programmers seeking a higher level abstraction than the Resource system
+should look at <a class="reference external" href="https://launchpad.net/nevow">Nevow</a> .
+Nevow is based on ideas previously developed in Twisted, but is now maintained
+outside of Twisted to easy development and release cycle pressures.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id1">Introduction</a></li>
+<li><a class="reference internal" href="#twisted-web-s-structure" id="id2">Twisted Web's Structure</a></li>
+<li><a class="reference internal" href="#resources" id="id3">Resources</a></li>
+<li><a class="reference internal" href="#web-programming-with-twisted-web" id="id4">Web programming with Twisted Web</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

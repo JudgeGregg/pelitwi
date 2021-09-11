@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - rpy scripts (or, how to save yourself some typing)</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>rpy scripts (or, how to save yourself some typing)</h1>
+        
+        <div class="entry-content">
+        <p>The goal of this installment is to show you another way to run a Twisted Web
+server with a custom resource which doesn't require as much code as the previous
+examples.</p>
+<p>The feature in question is called an <tt class="docutils literal">rpy script</tt> . An rpy script
+is a Python source file which defines a resource and can be loaded into a
+Twisted Web server. The advantages of this approach are that you don't have to
+write code to create the site or set up a listening port with the reactor. That
+means fewer lines of code that aren't dedicated to the task you're trying to
+accomplish.</p>
+<p>There are some disadvantages, though. An rpy script must have the
+extension <tt class="docutils literal">.rpy</tt> . This means you can't import it using the
+usual Python import statement. This means it's hard to re-use code in
+an rpy script. This also means you can't easily unit test it. The code
+in an rpy script is evaluated in an unusual context. So, while rpy
+scripts may be useful for testing out ideas, they're not recommend for
+much more than that.</p>
+<p>Okay, with that warning out of the way, let's dive in. First, as mentioned,
+rpy scripts are Python source files with the <tt class="docutils literal">.rpy</tt> extension. So,
+open up an appropriately named file (for example, <tt class="docutils literal">example.rpy</tt> ) and
+put this code in it:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+
+
+<span class="k">class</span> <span class="nc">ClockPage</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="n">isLeaf</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&#39;utf-8&#39;&gt;&quot;</span>
+                <span class="sa">b</span><span class="s2">&quot;&lt;title&gt;&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&quot;</span> <span class="o">+</span> <span class="n">time</span><span class="o">.</span><span class="n">ctime</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">ClockPage</span><span class="p">()</span>
+</pre></div>
+<p>You may recognize this as the resource from
+the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/generating-a-page-dynamically.html">first dynamic rendering example</a> . What's different is what you don't see: we didn't
+import <tt class="docutils literal">reactor</tt> or <tt class="docutils literal">Site</tt> . There are no calls
+to <tt class="docutils literal">endpoints.TCP4ServerEndpoint</tt> or <tt class="docutils literal">run</tt> . Instead, and this is
+the core idea for rpy scripts, we just bound the
+name <tt class="docutils literal">resource</tt> to the resource we want the script to
+serve. Every rpy script must bind this name, and this name is the only
+thing Twisted Web will pay attention to in an rpy script.</p>
+<p>All that's left is to drop this rpy script into a Twisted Web server. There
+are a few ways to do this. The simplest way is with <tt class="docutils literal">twistd</tt> :</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>twistd -n web --path .
+</pre></div>
+<p>Hit <a class="reference external" href="http://localhost:8080/example.rpy">http://localhost:8080/example.rpy</a>
+to see it run. You can pass other arguments here too. <tt class="docutils literal">twistd web</tt>
+has options for specifying which port number to bind, whether to set up an HTTPS
+server, and plenty more. Other options you can pass to <tt class="docutils literal">twistd</tt> allow
+you to configure logging to work differently, to select a different reactor,
+etc. For a full list of options, see <tt class="docutils literal">twistd <span class="pre">--help</span></tt> and <tt class="docutils literal">twistd web <span class="pre">--help</span></tt> .</p>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

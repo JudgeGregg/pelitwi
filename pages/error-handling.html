@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Error Handling</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Error Handling</h1>
+        
+        <div class="entry-content">
+        <p>In this example we'll extend dynamic dispatch to return a 404 (not found)
+response when a client requests a non-existent URL.</p>
+<p>As in the previous examples, we'll start with <cite>Site &lt;twisted.web.server.Site&gt;</cite> , <cite>Resource &lt;twisted.web.resource.Resource&gt;</cite> , <cite>reactor &lt;twisted.internet.reactor&gt;</cite>, and <cite>endpoints &lt;twisted.internet.endpoints&gt;</cite> imports:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">Site</span>
+<span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+</pre></div>
+<p>Next, we'll add one more import. <cite>NoResource &lt;twisted.web.resource.NoResource&gt;</cite> is one of the pre-defined error
+resources provided by Twisted Web. It generates the necessary 404 response code
+and renders a simple html page telling the client there is no such resource.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">NoResource</span>
+</pre></div>
+<p>Next, we'll define a custom resource which does some dynamic URL
+dispatch. This example is going to be just like
+the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/dynamic-url-dispatch.html">previous one</a> , where the path segment is
+interpreted as a year; the difference is that this time we'll handle requests
+which don't conform to that pattern by returning the not found response:</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Calendar</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">getChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">NoResource</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">YearPage</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+</pre></div>
+<p>Aside from including the definition of <tt class="docutils literal">YearPage</tt> from
+the previous example, the only other thing left to do is the
+normal <tt class="docutils literal">Site</tt> and <tt class="docutils literal">reactor</tt> setup. Here's the
+complete code for this example:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">Site</span>
+<span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+<span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">NoResource</span>
+
+<span class="kn">from</span> <span class="nn">calendar</span> <span class="kn">import</span> <span class="n">calendar</span>
+
+<span class="k">class</span> <span class="nc">YearPage</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="n">Resource</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">year</span> <span class="o">=</span> <span class="n">year</span>
+
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">cal</span> <span class="o">=</span> <span class="n">calendar</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&#39;utf-8&#39;&gt;&quot;</span>
+                <span class="sa">b</span><span class="s2">&quot;&lt;title&gt;&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;pre&gt;&quot;</span> <span class="o">+</span> <span class="n">cal</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;&lt;/pre&gt;&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Calendar</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">getChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">NoResource</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">YearPage</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">Calendar</span><span class="p">()</span>
+<span class="n">factory</span> <span class="o">=</span> <span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">8880</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+<p>This server hands out the same calendar views as the one from the previous
+installment, but it will also hand out a nice error page with a 404 response
+when a request is made for a URL which cannot be interpreted as a year.</p>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

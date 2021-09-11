@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Sending Mail</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Sending Mail</h1>
+        
+        <div class="entry-content">
+        <p>Twisted contains many ways of sending email, but the simplest is <cite>sendmail &lt;twisted.mail.smtp.sendmail&gt;</cite>.
+Intended as a near drop-in replacement of <cite>smtplib.SMTP</cite>'s <tt class="docutils literal">sendmail</tt> method, it provides the ability to send email over SMTP/ESMTP with minimal fuss or configuration.</p>
+<p>Knowledge of Twisted's Deferreds is required for making full use of this document.</p>
+<div class="section" id="sending-an-email-over-smtp">
+<h2><a class="toc-backref" href="#id1">Sending an Email over SMTP</a></h2>
+<p>Although insecure, some email systems still use plain SMTP for sending email.
+Plain SMTP has no authentication, no transport security (emails are transmitted in plain text), and should not be done over untrusted networks.</p>
+<p><tt class="docutils literal">sendmail</tt>'s positional arguments are, in order:</p>
+<ul class="simple">
+<li>The SMTP/ESMTP server you are sending the message to</li>
+<li>The email address you are sending from</li>
+<li>A <tt class="docutils literal">list</tt> of email addresses you are sending to</li>
+<li>The message.</li>
+</ul>
+<p>The following example shows these in action.</p>
+<p><cite>sendmail_smtp.py &lt;../examples/sendmail_smtp.py&gt;</cite></p>
+<p>Assuming that the values in it were replaced with real emails and a real SMTP server, it would send an email to the two addresses specified and print the return status.</p>
+</div>
+<div class="section" id="sending-an-email-over-esmtp">
+<h2><a class="toc-backref" href="#id2">Sending an Email over ESMTP</a></h2>
+<p>Extended SMTP (ESMTP) is an improved version of SMTP, and is used by most modern mail servers.
+Unlike SMTP, ESMTP supports authentication and transport security (emails are encrypted in transit).
+If you wish to send mail through services like GMail/Google Apps or Outlook.com/Office 365, you will have to use ESMTP.</p>
+<p>Using ESMTP requires more options -- usually the default port of 25 is not open, so you must find out your email provider's TLS-enabled ESMTP port.
+It also allows the use of authentication via a username and password.</p>
+<p>The following example shows part of the ESMTP functionality of <tt class="docutils literal">sendmail</tt>.</p>
+<p><cite>sendmail_gmail.py &lt;../examples/sendmail_gmail.py&gt;</cite></p>
+<p>Assuming you own the account <tt class="docutils literal">alice@gmail.com</tt>, this would send an email to both <tt class="docutils literal">bob@gmail.com</tt> and <tt class="docutils literal">charlie@gmail.com</tt>, and print out something like the following (formatted for clarity):</p>
+<pre class="literal-block">
+(2, [('bob@gmail.com', 250, '2.1.5 OK hz13sm11691456pac.6 - gsmtp'),
+     ('charlie@gmail.com', 250, '2.1.5 OK hz13sm11691456pac.6 - gsmtp')])
+</pre>
+<p><tt class="docutils literal">sendmail</tt> returns a 2-tuple, containing the number of emails sent successfully (note that this is from you to the server you specified, not to the recipient -- emails may still be lost between that server and the recipient) and a list of statuses of the sent mail.
+Each status is a 3-tuple containing the address it was sent to, the SMTP status code, and the server response.</p>
+</div>
+<div class="section" id="sending-complex-emails">
+<h2><a class="toc-backref" href="#id3">Sending Complex Emails</a></h2>
+<p>Sometimes you want to send more complicated emails -- ones with headers, or with attachments.
+<tt class="docutils literal">sendmail</tt> supports using Python's <cite>email.Message</cite>, which lets you make complex emails:</p>
+<p><cite>sendmail_message.py &lt;../examples/sendmail_message.py&gt;</cite></p>
+<p>For more information on how to use <tt class="docutils literal">Message</tt>, please see <cite>the module's Python docs &lt;py3:email-examples&gt;</cite>.</p>
+</div>
+<div class="section" id="enforcing-transport-security">
+<h2><a class="toc-backref" href="#id4">Enforcing Transport Security</a></h2>
+<p>To prevent downgrade attacks, you can pass <tt class="docutils literal">requireTransportSecurity=True</tt> to <tt class="docutils literal">sendmail</tt>.
+This means that your emails will not be transmitted in plain text.</p>
+<p>For example:</p>
+<pre class="literal-block">
+sendmail("smtp.gmail.com", me, to, message,
+         port=587, username=me, password="*********",
+         requireTransportSecurity=True)
+</pre>
+</div>
+<div class="section" id="conclusion">
+<h2><a class="toc-backref" href="#id5">Conclusion</a></h2>
+<p>In this document, you have seen how to:</p>
+<ol class="arabic simple">
+<li>Send an email over SMTP using <cite>sendmail &lt;twisted.mail.smtp.sendmail&gt;</cite>.</li>
+<li>Send an email over encrypted &amp; authenticated ESMTP with <cite>sendmail &lt;twisted.mail.smtp.sendmail&gt;</cite>.</li>
+<li>Send a "complex" email containing a subject line using the stdlib's <tt class="docutils literal">email.Message</tt> functionality.</li>
+<li>Enforce transport security for emails sent using <cite>sendmail &lt;twisted.mail.smtp.sendmail&gt;</cite>.</li>
+</ol>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#sending-an-email-over-smtp" id="id1">Sending an Email over SMTP</a></li>
+<li><a class="reference internal" href="#sending-an-email-over-esmtp" id="id2">Sending an Email over ESMTP</a></li>
+<li><a class="reference internal" href="#sending-complex-emails" id="id3">Sending Complex Emails</a></li>
+<li><a class="reference internal" href="#enforcing-transport-security" id="id4">Enforcing Transport Security</a></li>
+<li><a class="reference internal" href="#conclusion" id="id5">Conclusion</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

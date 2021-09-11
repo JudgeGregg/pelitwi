@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Generating a Page Dynamically</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Generating a Page Dynamically</h1>
+        
+        <div class="entry-content">
+        <p>The goal of this example is to show you how to dynamically generate the
+contents of a page.</p>
+<p>Taking care of some of the necessary imports first, we'll import <cite>Site &lt;twisted.web.server.Site&gt;</cite>, the <cite>reactor &lt;twisted.internet.reactor&gt;</cite>, and <cite>endpoints &lt;twisted.internet.endpoints&gt;</cite> :</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+<span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">Site</span>
+</pre></div>
+<p>The Site is a factory which associates a listening port with the HTTP
+protocol implementation. The reactor is the main loop that drives any Twisted
+application. Endpoints are used to create listening ports.</p>
+<p>Next, we'll import one more thing from Twisted
+Web: <cite>Resource &lt;twisted.web.resource.Resource&gt;</cite> . An
+instance of <tt class="docutils literal">Resource</tt> (or a subclass) represents a page
+(technically, the entity addressed by a URI).</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+</pre></div>
+<p>Since we're going to make the demo resource a clock, we'll also import the
+time module:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+</pre></div>
+<p>With imports taken care of, the next step is to define
+a <tt class="docutils literal">Resource</tt> subclass which has the dynamic rendering
+behavior we want. Here's a resource which generates a page giving the
+time:</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ClockPage</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="n">isLeaf</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&#39;utf-8&#39;&gt;&quot;</span>
+                <span class="sa">b</span><span class="s2">&quot;&lt;title&gt;&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&quot;</span> <span class="o">+</span> <span class="n">time</span><span class="o">.</span><span class="n">ctime</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+</pre></div>
+<p>Setting <tt class="docutils literal">isLeaf</tt> to <tt class="docutils literal">True</tt> indicates
+that <tt class="docutils literal">ClockPage</tt> resources will never have any
+children.</p>
+<p>The <tt class="docutils literal">render_GET</tt> method here will be called whenever the URI we
+hook this resource up to is requested with the <tt class="docutils literal">GET</tt> method. The byte
+string it returns is what will be sent to the browser.  In this case, that
+byte string is an HTML 5 web page encoded as UTF-8.</p>
+<p>With the resource defined, we can create a <tt class="docutils literal">Site</tt> from it:</p>
+<div class="highlight"><pre><span></span><span class="n">resource</span> <span class="o">=</span> <span class="n">ClockPage</span><span class="p">()</span>
+<span class="n">factory</span> <span class="o">=</span> <span class="n">Site</span><span class="p">(</span><span class="n">resource</span><span class="p">)</span>
+</pre></div>
+<p>Just as with the previous static content example, this
+configuration puts our resource at the very top of the URI hierarchy,
+ie at <tt class="docutils literal">/</tt> . With that <tt class="docutils literal">Site</tt> instance, we can
+tell the reactor to <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-servers.html">create a TCP server</a> and start servicing requests:</p>
+<div class="highlight"><pre><span></span><span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">8880</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+<p>Here's the code with no interruptions:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+<span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">Site</span>
+<span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="k">class</span> <span class="nc">ClockPage</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="n">isLeaf</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&#39;utf-8&#39;&gt;&quot;</span>
+                <span class="sa">b</span><span class="s2">&quot;&lt;title&gt;&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&quot;</span> <span class="o">+</span> <span class="n">time</span><span class="o">.</span><span class="n">ctime</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">ClockPage</span><span class="p">()</span>
+<span class="n">factory</span> <span class="o">=</span> <span class="n">Site</span><span class="p">(</span><span class="n">resource</span><span class="p">)</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">8880</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

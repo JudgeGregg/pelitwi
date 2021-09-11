@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Working from Twisted's code repository</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Working from Twisted's code repository</h1>
+        
+        <div class="entry-content">
+        <p>If you're going to be doing development on Twisted itself, or if you want
+to take advantage of bleeding-edge features (or bug fixes) that are not yet
+available in a numbered release, you'll probably want to check out a tree from
+the Twisted Git repository. The Trunk is where all current development
+takes place.</p>
+<p>This document lists some useful tips for working on this cutting
+edge.</p>
+<div class="section" id="checkout">
+<h2><a class="toc-backref" href="#id1">Checkout</a></h2>
+<p>Git tutorials can be found elsewhere, see in particular <a class="reference external" href="https://help.github.com/articles/good-resources-for-learning-git-and-github/">Git and GitHub learning resources</a> . The
+relevant data you need to check out a copy of the Twisted tree is available on
+the <a class="reference external" href="https://twistedmatrix.com/trac/wiki/TwistedDevelopment">development page</a> , and is as follows:</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>git clone https://github.com/twisted/twisted Twisted
+</pre></div>
+<p>The output of <tt class="docutils literal">git blame</tt> <a class="reference external" href="https://github.com/psf/black#migrating-your-code-style-without-ruining-git-blame">will be better</a> if you configure it to use our ignore file:</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> Twisted
+<span class="gp">$ </span>git config blame.ignoreRevsFile .git-blame-ignore-revs
+</pre></div>
+</div>
+<div class="section" id="alternate-tree-names">
+<h2><a class="toc-backref" href="#id2">Alternate tree names</a></h2>
+<p>By using <tt class="docutils literal">git clone <span class="pre">https://github.com/twisted/twisted</span> otherdir</tt> , you can put the workspace tree in a directory other than "Twisted" . I do this (with a name like "Twisted-Git" ) to
+remind myself that this tree comes from Git and not from a released
+version (like "Twisted-1.0.5" ). This practice can cause a few problems,
+because there are a few places in the Twisted tree that need to know where
+the tree starts, so they can add it to <tt class="docutils literal">sys.path</tt> without
+requiring the user manually set their PYTHONPATH. These functions walk the
+current directory up to the root, looking for a directory named "Twisted" (sometimes exactly that, sometimes with a <tt class="docutils literal">.startswith</tt> test). Generally these are test scripts or other
+administrative tools which expect to be launched from somewhere inside the
+tree (but not necessarily from the top).</p>
+<p>If you rename the tree to something other than <tt class="docutils literal">Twisted</tt> , these
+tools may wind up trying to use Twisted source files from /usr/lib/python2.5
+or elsewhere on the default <tt class="docutils literal">sys.path</tt> .  Normally this won't
+matter, but it is good to be aware of the issue in case you run into
+problems.</p>
+<p><tt class="docutils literal">twisted/test/process_twisted.py</tt> is one of these programs.</p>
+</div>
+<div class="section" id="compiling-c-extensions">
+<h2><a class="toc-backref" href="#id3">Compiling C extensions</a></h2>
+<p>There are currently several C extension modules in Twisted: <tt class="docutils literal">twisted.internet.cfsupport</tt> , <tt class="docutils literal">twisted.internet.iocpreactor._iocp</tt> ,
+and <tt class="docutils literal">twisted.python._epoll</tt> .  These modules
+are optional, but you'll have to compile them if you want to experience their
+features, performance improvements, or bugs. There are two approaches.</p>
+<p>The first is to do a regular distutils <tt class="docutils literal">./setup.py build</tt> , which
+will create a directory under <tt class="docutils literal">build/</tt> to hold both the generated <tt class="docutils literal">.so</tt> files as well as a copy of the 600-odd <tt class="docutils literal">.py</tt> files
+that make up Twisted. If you do this, you will need to set your PYTHONPATH to
+something like <tt class="docutils literal"><span class="pre">MyDir/Twisted/build/lib.linux-i686-2.5</span></tt> in order to
+run code against the Git twisted (as opposed to whatever's installed in <tt class="docutils literal">/usr/lib/python2.5</tt> or wherever python usually looks). In
+addition, you will need to re-run the <tt class="docutils literal">build</tt> command <em>every time</em> you change a <tt class="docutils literal">.py</tt> file. The <tt class="docutils literal">build/lib.foo</tt>
+directory is a copy of the main tree, and that copy is only updated when you
+re-run <tt class="docutils literal">setup.py build</tt> . It is easy to forget this and then wonder
+why your code changes aren't being expressed.</p>
+<p>The second technique is to build the C modules in place, and point your
+PYTHONPATH at the top of the tree, like <tt class="docutils literal">MyDir/Twisted</tt> . This way
+you're using the .py files in place too, removing the confusion a forgotten
+rebuild could cause with the separate build/ directory above. To build the C
+modules in place, do <tt class="docutils literal">./setup.py build_ext <span class="pre">-i</span></tt> . You only need to
+re-run this command when you change the C files. Note that <tt class="docutils literal">setup.py</tt> is not Make, it does not always get the dependencies
+right (<tt class="docutils literal">.h</tt> files in particular), so if you are hacking on the
+cReactor you may need to manually delete the <tt class="docutils literal">.o</tt> files before
+doing a rebuild. Also note that doing a <tt class="docutils literal">setup.py clean</tt> will
+remove the <tt class="docutils literal">.o</tt> files but not the final <tt class="docutils literal">.so</tt> files,
+they must be deleted by hand.</p>
+</div>
+<div class="section" id="running-tests">
+<h2><a class="toc-backref" href="#id4">Running tests</a></h2>
+<p>To run the full unit-test suite, do:</p>
+<div class="highlight"><pre><span></span><span class="go">./bin/trial twisted</span>
+</pre></div>
+<p>To run a single test file (like <tt class="docutils literal">twisted/test/test_defer.py</tt> ),
+do one of:</p>
+<div class="highlight"><pre><span></span><span class="go">./bin/trial twisted.test.test_defer</span>
+</pre></div>
+<p>or</p>
+<div class="highlight"><pre><span></span><span class="go">./bin/trial twisted/test/test_defer.py</span>
+</pre></div>
+<p>To run any tests that are related to a code file, like <tt class="docutils literal">twisted/protocols/imap4.py</tt> , do:</p>
+<div class="highlight"><pre><span></span><span class="go">./bin/trial --testmodule twisted/mail/imap4.py</span>
+</pre></div>
+<p>This depends upon the <tt class="docutils literal">.py</tt> file having an appropriate "test-case-name" tag that indicates which test cases provide coverage.
+See the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/unit-tests-in-twisted.html">Test Standards</a> document for
+details about using "test-case-name" . In this example, the <tt class="docutils literal">twisted.mail.test.test_imap</tt> test will be run.</p>
+<p>Many tests create temporary files in /tmp or ./_trial_temp, but
+everything in /tmp should be deleted when the test finishes. Sometimes these
+cleanup calls are commented out by mistake, so if you see a stray <tt class="docutils literal"><span class="pre">/tmp/@12345.1</span></tt> directory, it is probably from <tt class="docutils literal">test_dirdbm</tt> or <tt class="docutils literal">test_popsicle</tt> .
+Look for an <tt class="docutils literal">rmtree</tt> that has been commented out and complain to
+the last developer who touched that file.</p>
+</div>
+<div class="section" id="building-docs">
+<h2><a class="toc-backref" href="#id5">Building docs</a></h2>
+<p>Twisted documentation (not including the automatically-generated API docs) is generated by <a class="reference external" href="https://sphinx-doc.org/">Sphinx</a> .
+The docs are written in Restructured Text (<tt class="docutils literal">.rst</tt>) and translated into <tt class="docutils literal">.html</tt> files by the <tt class="docutils literal"><span class="pre">bin/admin/build-docs</span></tt> script.</p>
+<p>To build the HTML form of the docs into the <tt class="docutils literal">doc/</tt> directory, do the following:</p>
+<div class="highlight"><pre><span></span><span class="go">./bin/admin/build-docs .</span>
+</pre></div>
+</div>
+<div class="section" id="committing-and-post-commit-hooks">
+<h2><a class="toc-backref" href="#id6">Committing and Post-commit Hooks</a></h2>
+<p>Twisted's Trac installation is notified when the Git repository changes,
+and will update the ticket depending on the Git commit logs.
+When making a branch for a ticket, the branch name should end
+in <tt class="docutils literal"><span class="pre">-&lt;ticket</span> number&gt;</tt> , for
+example <tt class="docutils literal"><span class="pre">my-branch-9999</span></tt> . This will add a ticket comment containing a
+changeset link and branch name. To make your commit message show up as a comment
+on a Trac ticket, add a <tt class="docutils literal">refs #&lt;ticket number&gt;</tt> line at the
+bottom of your commit message. To automatically close a ticket on Trac
+as <tt class="docutils literal">Fixed</tt> and add a comment with the closing commit message, add
+a <tt class="docutils literal">Fixes: #&lt;ticket number&gt;</tt> line to your commit message. In
+general, a commit message closing a ticket looks like this:</p>
+<pre class="literal-block">
+Merge my-branch-9999: A single-line summary.
+
+Author: jesstess
+Reviewers: exarkun, glyph
+Fixes: #9999
+
+My longer description of the changes made.
+</pre>
+<p>The <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/twisted-coding-standard.html">Twisted Coding Standard</a>
+elaborates on commit messages and source control.</p>
+</div>
+<div class="section" id="emacs">
+<h2><a class="toc-backref" href="#id7">Emacs</a></h2>
+<p>A minor mode for development with Twisted using Emacs is available.  See <tt class="docutils literal"><span class="pre">twisted-dev.el</span></tt> , provided by <a class="reference external" href="https://launchpad.net/twisted-emacs">twisted-emacs</a> ,
+for several utility functions which make it easier to grep for methods, run test cases, etc.</p>
+</div>
+<div class="section" id="building-debian-packages">
+<h2><a class="toc-backref" href="#id8">Building Debian packages</a></h2>
+<p>Our support for building Debian packages has fallen into disrepair.  We
+would very much like to restore this functionality, but until we do so, if
+you are interested in this, you are on your own.  See <a class="reference external" href="https://github.com/astraw/stdeb">stdeb</a> for one possible approach to
+this.</p>
+</div>
+<div class="section" id="travis-ci-integration">
+<h2><a class="toc-backref" href="#id9">Travis CI integration</a></h2>
+<p>Travis CI is configured to run a subset of the official Buildbot builders for each push to a PR or to <tt class="docutils literal">trunk</tt></p>
+<p>The tests are executed using <tt class="docutils literal"><span class="pre">tox-travis</span></tt>. See the <tt class="docutils literal">tox.ini</tt> file for the actual configuration.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#checkout" id="id1">Checkout</a></li>
+<li><a class="reference internal" href="#alternate-tree-names" id="id2">Alternate tree names</a></li>
+<li><a class="reference internal" href="#compiling-c-extensions" id="id3">Compiling C extensions</a></li>
+<li><a class="reference internal" href="#running-tests" id="id4">Running tests</a></li>
+<li><a class="reference internal" href="#building-docs" id="id5">Building docs</a></li>
+<li><a class="reference internal" href="#committing-and-post-commit-hooks" id="id6">Committing and Post-commit Hooks</a></li>
+<li><a class="reference internal" href="#emacs" id="id7">Emacs</a></li>
+<li><a class="reference internal" href="#building-debian-packages" id="id8">Building Debian packages</a></li>
+<li><a class="reference internal" href="#travis-ci-integration" id="id9">Travis CI integration</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

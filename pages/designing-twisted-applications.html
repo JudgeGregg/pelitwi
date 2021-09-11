@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Designing Twisted Applications</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Designing Twisted Applications</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="goals">
+<h2><a class="toc-backref" href="#id1">Goals</a></h2>
+<p>This document describes how a good Twisted application is structured. It
+should be useful for beginning Twisted developers who want to structure their
+code in a clean, maintainable way that reflects current best practices.</p>
+<p>Readers will want to be familiar with writing <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-servers.html">servers</a> and <cite>clients &lt;clients&gt;</cite> using Twisted.</p>
+</div>
+<div class="section" id="example-of-a-modular-design-twistedquotes">
+<h2><a class="toc-backref" href="#id2">Example of a modular design: TwistedQuotes</a></h2>
+<p><tt class="docutils literal">TwistedQuotes</tt> is a very simple plugin which is a great
+demonstration of
+Twisted's power.  It will export a small kernel of functionality -- Quote of
+the Day -- which can be accessed through every interface that Twisted supports:
+web pages, e-mail, instant messaging, a specific Quote of the Day protocol, and
+more.</p>
+<div class="section" id="set-up-the-project-directory">
+<h3><a class="toc-backref" href="#id3">Set up the project directory</a></h3>
+<p>See the description of <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/setting-up-the-twistedquotes-application.html">setting up the TwistedQuotes example</a> .</p>
+</div>
+<div class="section" id="a-look-at-the-heart-of-the-application">
+<h3><a class="toc-backref" href="#id4">A Look at the Heart of the Application</a></h3>
+<p><cite>quoters.py &lt;listings/TwistedQuotes/quoters.py&gt;</cite></p>
+<p>This code listing shows us what the Twisted Quotes system is all about.  The
+code doesn't have any way of talking to the outside world, but it provides a
+library which is a clear and uncluttered abstraction: "give me the quote of the day" .</p>
+<p>Note that this module does not import any Twisted functionality at all!  The
+reason for doing things this way is integration.  If your "business objects" are not stuck to your user interface, you can make a module that
+can integrate those objects with different protocols, GUIs, and file formats.
+Having such classes provides a way to decouple your components from each other,
+by allowing each to be used independently.</p>
+<p>In this manner, Twisted itself has minimal impact on the logic of your
+program.  Although the Twisted "dot products" are highly interoperable,
+they
+also follow this approach.  You can use them independently because they are not
+stuck to each other.  They communicate in well-defined ways, and only when that
+communication provides some additional feature.  Thus, you can use <cite>twisted.web</cite> with <cite>twisted.enterprise</cite> , but neither requires the other, because
+they are integrated around the concept of <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deferred-reference.html">Deferreds</a> .</p>
+<p>Your Twisted applications should follow this style as much as possible.
+Have (at least) one module which implements your specific functionality,
+independent of any user-interface code.</p>
+<p>Next, we're going to need to associate this abstract logic with some way of
+displaying it to the user.  We'll do this by writing a Twisted server protocol,
+which will respond to the clients that connect to it by sending a quote to the
+client and then closing the connection.  Note: don't get too focused on the
+details of this -- different ways to interface with the user are 90% of what
+Twisted does, and there are lots of documents describing the different ways to
+do it.</p>
+<p><cite>quoteproto.py &lt;listings/TwistedQuotes/quoteproto.py&gt;</cite></p>
+<p>This is a very straightforward <tt class="docutils literal">Protocol</tt> implementation, and the
+pattern described above is repeated here.  The Protocol contains essentially no
+logic of its own, just enough to tie together an object which can generate
+quotes (a <tt class="docutils literal">Quoter</tt> ) and an object which can relay
+bytes to a TCP connection (a <tt class="docutils literal">Transport</tt> ).  When a
+client connects to this server, a <tt class="docutils literal">QOTD</tt> instance is
+created, and its <tt class="docutils literal">connectionMade</tt> method is called.</p>
+<p>The <tt class="docutils literal">QOTDFactory</tt> 's role is to specify to the
+Twisted framework how to create a <tt class="docutils literal">Protocol</tt> instance
+that will handle the connection.  Twisted will not instantiate a <tt class="docutils literal">QOTDFactory</tt> ; you will do that yourself later, in a <tt class="docutils literal">twistd</tt> plug-in.</p>
+<p>Note: you can read more specifics of <tt class="docutils literal">Protocol</tt> and <tt class="docutils literal">Factory</tt> in the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-servers.html">Writing Servers</a> HOWTO.</p>
+<p>Once we have an abstraction -- a <tt class="docutils literal">Quoter</tt> -- and we have a
+mechanism to connect it to the network -- the <tt class="docutils literal">QOTD</tt> protocol -- the
+next thing to do is to put the last link in the chain of functionality between
+abstraction and user.  This last link will allow a user to choose a <tt class="docutils literal">Quoter</tt> and configure the protocol. Writing this configuration is
+covered in the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-the-twisted-application-framework.html">Application HOWTO</a> .</p>
+
+</div>
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#goals" id="id1">Goals</a></li>
+<li><a class="reference internal" href="#example-of-a-modular-design-twistedquotes" id="id2">Example of a modular design: TwistedQuotes</a><ul>
+<li><a class="reference internal" href="#set-up-the-project-directory" id="id3">Set up the project directory</a></li>
+<li><a class="reference internal" href="#a-look-at-the-heart-of-the-application" id="id4">A Look at the Heart of the Application</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Using Processes</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Using Processes</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="overview">
+<h2><a class="toc-backref" href="#id1">Overview</a></h2>
+<p>Along with connection to servers across the internet, Twisted also
+connects to local processes with much the same API. The API is described in
+more detail in the documentation of:</p>
+<ul class="simple">
+<li><cite>twisted.internet.interfaces.IReactorProcess</cite></li>
+<li><cite>twisted.internet.interfaces.IProcessTransport</cite></li>
+<li><cite>twisted.internet.interfaces.IProcessProtocol</cite></li>
+</ul>
+</div>
+<div class="section" id="running-another-process">
+<h2><a class="toc-backref" href="#id2">Running Another Process</a></h2>
+<p>Processes are run through the reactor,
+using <tt class="docutils literal">reactor.spawnProcess</tt> . Pipes are created to the child process,
+and added to the reactor core so that the application will not block while
+sending data into or pulling data out of the new
+process. <tt class="docutils literal">reactor.spawnProcess</tt> requires two arguments,
+<tt class="docutils literal">processProtocol</tt> and <tt class="docutils literal">executable</tt> , and optionally takes
+several more: <tt class="docutils literal">args</tt> , <tt class="docutils literal">environment</tt> ,
+<tt class="docutils literal">path</tt> , <tt class="docutils literal">userID</tt> , <tt class="docutils literal">groupID</tt> ,
+<tt class="docutils literal">usePTY</tt> , and <tt class="docutils literal">childFDs</tt> . Not all of these are
+available on Windows.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+
+<span class="n">processProtocol</span> <span class="o">=</span> <span class="n">MyProcessProtocol</span><span class="p">()</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">spawnProcess</span><span class="p">(</span><span class="n">processProtocol</span><span class="p">,</span> <span class="n">executable</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">program</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">],</span>
+                     <span class="n">env</span><span class="o">=</span><span class="p">{</span><span class="s1">'HOME'</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'HOME'</span><span class="p">]},</span> <span class="n">path</span><span class="p">,</span>
+                     <span class="n">uid</span><span class="p">,</span> <span class="n">gid</span><span class="p">,</span> <span class="n">usePTY</span><span class="p">,</span> <span class="n">childFDs</span><span class="p">)</span>
+</pre></div>
+<ul class="simple">
+<li><tt class="docutils literal">processProtocol</tt> should be an instance of a subclass of
+<cite>twisted.internet.protocol.ProcessProtocol</cite> . The
+interface is described below.</li>
+<li><tt class="docutils literal">executable</tt> is the full path of the program to run. It
+will be connected to processProtocol.</li>
+<li><tt class="docutils literal">args</tt> is a list of command line arguments to be passed to
+the process. <tt class="docutils literal">args[0]</tt> should be the name of the process.</li>
+<li><tt class="docutils literal">env</tt> is a dictionary containing the environment to pass
+through to the process.</li>
+<li><tt class="docutils literal">path</tt> is the directory to run the process in. The child
+will switch to the given directory just before starting the new program.
+The default is to stay in the current directory.</li>
+<li><tt class="docutils literal">uid</tt> and <tt class="docutils literal">gid</tt> are the user ID and group ID to
+run the subprocess as. Of course, changing identities will be more likely
+to succeed if you start as root.</li>
+<li><tt class="docutils literal">usePTY</tt> specifies whether the child process should be run
+with a pty, or if it should just get a pair of pipes.  Whether a program
+needs to be run with a PTY or not depends on the particulars of that
+program.  Often, programs which primarily interact with users via a terminal
+do need a PTY.</li>
+<li><tt class="docutils literal">childFDs</tt> lets you specify how the child's file
+descriptors should be set up. Each key is a file descriptor number (an
+integer) as seen by the child. 0, 1, and 2 are usually stdin, stdout, and
+stderr, but some programs may be instructed to use additional fds through
+command-line arguments or environment variables. Each value is either an
+integer specifying one of the parent's current file descriptors, the
+string "r" which creates a pipe that the parent can read from, or the
+string "w" which creates a pipe that the parent can write to. If
+<tt class="docutils literal">childFDs</tt> is not provided, a default is used which creates the
+usual stdin-writer, stdout-reader, and stderr-reader pipes.</li>
+</ul>
+<p><tt class="docutils literal">args</tt> and <tt class="docutils literal">env</tt> have empty default values, but
+many programs depend upon them to be set correctly. At the very least,
+<tt class="docutils literal">args[0]</tt> should probably be the same as <tt class="docutils literal">executable</tt> .
+If you just provide <tt class="docutils literal">os.environ</tt> for <tt class="docutils literal">env</tt> , the child
+program will inherit the environment from the current process, which is
+usually the civilized thing to do (unless you want to explicitly clean the
+environment as a security precaution). The default is to give an empty <tt class="docutils literal">env</tt> to the child.</p>
+<p><tt class="docutils literal">reactor.spawnProcess</tt> returns an instance that implements <cite>IProcessTransport &lt;twisted.internet.interfaces.IProcessTransport&gt;</cite>.</p>
+</div>
+<div class="section" id="writing-a-processprotocol">
+<h2><a class="toc-backref" href="#id3">Writing a ProcessProtocol</a></h2>
+<p>The ProcessProtocol you pass to <tt class="docutils literal">spawnProcess</tt> is your
+interaction with the process. It has a very similar signature to a regular
+Protocol, but it has several extra methods to deal with events specific to
+a process. In our example, we will interface with 'wc' to create a word count
+of user-given text. First, we'll start by importing the required modules, and
+writing the initialization for our ProcessProtocol.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">protocol</span>
+<span class="k">class</span> <span class="nc">WCProcessProtocol</span><span class="p">(</span><span class="n">protocol</span><span class="o">.</span><span class="n">ProcessProtocol</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+</pre></div>
+<p>When the ProcessProtocol is connected to the protocol, it has the
+connectionMade method called. In our protocol, we will write our text to the
+standard input of our process and then close standard input, to let the
+process know we are done writing to it.</p>
+<div class="highlight"><pre><span></span><span class="o">...</span>
+    <span class="k">def</span> <span class="nf">connectionMade</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">closeStdin</span><span class="p">()</span>
+</pre></div>
+<p>At this point, the process has received the data, and it's time for us
+to read the results. Instead of being received in <tt class="docutils literal">dataReceived</tt> ,
+data from standard output is received in <tt class="docutils literal">outReceived</tt> . This is
+to distinguish it from data on standard error.</p>
+<div class="highlight"><pre><span></span><span class="o">...</span>
+    <span class="k">def</span> <span class="nf">outReceived</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">fieldLength</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[:</span><span class="n">fieldLength</span><span class="p">])</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">fieldLength</span><span class="p">:</span><span class="n">fieldLength</span><span class="o">*</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">chars</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">fieldLength</span><span class="o">*</span><span class="mi">2</span><span class="p">:])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">loseConnection</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">receiveCounts</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">chars</span><span class="p">)</span>
+</pre></div>
+<p>Now, the process has parsed the output, and ended the connection to the
+process. Then it sends the results on to the final method, receiveCounts.
+This is for users of the class to override, so as to do other things with
+the data. For our demonstration, we will just print the results.</p>
+<div class="highlight"><pre><span></span><span class="o">...</span>
+    <span class="k">def</span> <span class="nf">receiveCounts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span> <span class="n">words</span><span class="p">,</span> <span class="n">chars</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Received counts from wc.'</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Lines:'</span><span class="p">,</span> <span class="n">lines</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Words:'</span><span class="p">,</span> <span class="n">words</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Characters:'</span><span class="p">,</span> <span class="n">chars</span><span class="p">)</span>
+</pre></div>
+<p>We're done! To use our WCProcessProtocol, we create an instance, and pass
+it to spawnProcess.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+<span class="n">wcProcess</span> <span class="o">=</span> <span class="n">WCProcessProtocol</span><span class="p">(</span><span class="s2">"accessing protocols through Twisted is fun!</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">spawnProcess</span><span class="p">(</span><span class="n">wcProcess</span><span class="p">,</span> <span class="s1">'wc'</span><span class="p">,</span> <span class="p">[</span><span class="s1">'wc'</span><span class="p">])</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="section" id="things-that-can-happen-to-your-processprotocol">
+<h2><a class="toc-backref" href="#id4">Things that can happen to your ProcessProtocol</a></h2>
+<p>These are the methods that you can usefully override in your subclass of
+<tt class="docutils literal">ProcessProtocol</tt> :</p>
+<ul class="simple">
+<li><tt class="docutils literal">.connectionMade()</tt> : This is called when the program is
+started, and makes a good place to write data into the stdin pipe (using
+<tt class="docutils literal">self.transport.write</tt> ).</li>
+<li><tt class="docutils literal">.outReceived(data)</tt> : This is called with data that was
+received from the process' stdout pipe. Pipes tend to provide data in
+larger chunks than sockets (one kilobyte is a common buffer size), so you
+may not experience the "random dribs and drabs" behavior typical of
+network sockets, but regardless you should be prepared to deal if you
+don't get all your data in a single call. To do it properly,
+<tt class="docutils literal">outReceived</tt> ought to simply accumulate the data and put off
+doing anything with it until the process has finished.</li>
+<li><tt class="docutils literal">.errReceived(data)</tt> : This is called with data from the
+process' stderr pipe. It behaves just like <tt class="docutils literal">outReceived</tt> .</li>
+<li><tt class="docutils literal">.inConnectionLost</tt> : This is called when the reactor notices
+that the process' stdin pipe has closed. Programs don't typically close
+their own stdin, so this will probably get called when your
+ProcessProtocol has shut down the write side with <tt class="docutils literal">self.transport.loseConnection</tt> .</li>
+<li><tt class="docutils literal">.outConnectionLost</tt> : This is called when the program closes
+its stdout pipe. This usually happens when the program terminates.</li>
+<li><tt class="docutils literal">.errConnectionLost</tt> : Same as
+<tt class="docutils literal">outConnectionLost</tt> , but for stderr instead of stdout.</li>
+<li><tt class="docutils literal">.processExited(status)</tt> : This is called when the child
+process has been reaped, and receives information about the process' exit
+status. The status is passed in the form of a <cite>Failure &lt;twisted.python.failure.Failure&gt;</cite> instance, created with a
+<tt class="docutils literal">.value</tt> that either holds a <cite>ProcessDone &lt;twisted.internet.error.ProcessDone&gt;</cite> object if the process
+terminated normally (it died of natural causes instead of receiving a
+signal, and if the exit code was 0), or a <cite>ProcessTerminated &lt;twisted.internet.error.ProcessTerminated&gt;</cite> object (with an
+<tt class="docutils literal">.exitCode</tt> attribute) if something went wrong.</li>
+<li><tt class="docutils literal">.processEnded(status)</tt> : This is called when all the file
+descriptors associated with the child process have been closed and the
+process has been reaped.  This means it is the last callback which will be
+made onto a <tt class="docutils literal">ProcessProtocol</tt> .  The <tt class="docutils literal">status</tt> parameter
+has the same meaning as it does for <tt class="docutils literal">processExited</tt> .</li>
+</ul>
+<p>The base-class definitions of most of these functions are no-ops. This will
+result in all stdout and stderr being thrown away. Note that it is important
+for data you don't care about to be thrown away: if the pipe were not read,
+the child process would eventually block as it tried to write to a full
+pipe.</p>
+</div>
+<div class="section" id="things-you-can-do-from-your-processprotocol">
+<h2><a class="toc-backref" href="#id5">Things you can do from your ProcessProtocol</a></h2>
+<p>The following are the basic ways to control the child process:</p>
+<ul class="simple">
+<li><tt class="docutils literal">self.transport.write(data)</tt> : Stuff some data in the stdin
+pipe. Note that this <tt class="docutils literal">write</tt> method will queue any data that can't
+be written immediately. Writing will resume in the future when the pipe
+becomes writable again.</li>
+<li><tt class="docutils literal">self.transport.closeStdin</tt> : Close the stdin pipe. Programs
+which act as filters (reading from stdin, modifying the data, writing to
+stdout) usually take this as a sign that they should finish their job and
+terminate. For these programs, it is important to close stdin when you're
+done with it, otherwise the child process will never quit.</li>
+<li><tt class="docutils literal">self.transport.closeStdout</tt> : Not usually called, since you're
+putting the process into a state where any attempt to write to stdout will
+cause a SIGPIPE error. This isn't a nice thing to do to the poor
+process.</li>
+<li><tt class="docutils literal">self.transport.closeStderr</tt> : Not usually called, same reason
+as <tt class="docutils literal">closeStdout</tt> .</li>
+<li><tt class="docutils literal">self.transport.loseConnection</tt> : Close all three pipes.</li>
+<li><tt class="docutils literal"><span class="pre">self.transport.signalProcess('KILL')</span></tt> : Kill the child
+process. This will eventually result in <tt class="docutils literal">processEnded</tt> being
+called.</li>
+</ul>
+</div>
+<div class="section" id="verbose-example">
+<h2><a class="toc-backref" href="#id6">Verbose Example</a></h2>
+<p>Here is an example that is rather verbose about exactly when all the
+methods are called. It writes a number of lines into the <tt class="docutils literal">wc</tt>
+program and then parses the output.</p>
+<p><cite>process.py &lt;listings/process/process.py&gt;</cite></p>
+<p>The exact output of this program depends upon the relative timing of some
+un-synchronized events. In particular, the program may observe the child
+process close its stderr pipe before or after it reads data from the stdout
+pipe. One possible transcript would look like this:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>./process.py
+<span class="go">connectionMade!</span>
+<span class="go">inConnectionLost! stdin is closed! (we probably did it)</span>
+<span class="go">errConnectionLost! The child closed their stderr.</span>
+<span class="go">outReceived! with 24 bytes!</span>
+<span class="go">outConnectionLost! The child closed their stdout!</span>
+<span class="go">I saw 40 lines</span>
+<span class="go">processEnded, status 0</span>
+<span class="go">quitting</span>
+<span class="go">Main loop terminated.</span>
+<span class="gp">%</span>
+</pre></div>
+</div>
+<div class="section" id="doing-it-the-easy-way">
+<h2><a class="toc-backref" href="#id7">Doing it the Easy Way</a></h2>
+<p>Frequently, one just needs a simple way to get all the output from a
+program. In the blocking world, you might use <tt class="docutils literal">commands.getoutput</tt> from the standard library, but
+using that in an event-driven program will cause everything else to stall
+until the command finishes. (in addition, the SIGCHLD handler used by that
+function does not play well with Twisted's own signal handling). For these
+cases, the <cite>twisted.internet.utils.getProcessOutput</cite>
+function can be used. Here is a simple example:</p>
+<p><cite>quotes.py &lt;listings/process/quotes.py&gt;</cite></p>
+<p>If you only need the final exit code (like <tt class="docutils literal"><span class="pre">commands.getstatusoutput(cmd)[0]</span></tt> ), the <cite>twisted.internet.utils.getProcessValue</cite> function is
+useful. Here is an example:</p>
+<p><cite>trueandfalse.py &lt;listings/process/trueandfalse.py&gt;</cite></p>
+</div>
+<div class="section" id="mapping-file-descriptors">
+<h2><a class="toc-backref" href="#id8">Mapping File Descriptors</a></h2>
+<p>"stdin" , "stdout" , and "stderr" are just conventions.
+Programs which operate as filters generally accept input on fd0, write their
+output on fd1, and emit error messages on fd2. This is common enough that
+the standard C library provides macros like "stdin" to mean fd0, and
+shells interpret the pipe character "|" to mean "redirect fd1 from one command into fd0 of the next command" .</p>
+<p>But these are just conventions, and programs are free to use additional
+file descriptors or even ignore the standard three entirely. The"childFDs" argument allows you to specify exactly what kind of files
+descriptors the child process should be given.</p>
+<p>Each child FD can be put into one of three states:</p>
+<ul class="simple">
+<li>Mapped to a parent FD: this causes the child's reads and writes to
+come from or go to the same source/destination as the parent.</li>
+<li>Feeding into a pipe which can be read by the parent.</li>
+<li>Feeding from a pipe which the parent writes into.</li>
+</ul>
+<p>Mapping the child FDs to the parent's is very commonly used to send the
+child's stderr output to the same place as the parent's. When you run a
+program from the shell, it will typically leave fds 0, 1, and 2 mapped to
+the shell's 0, 1, and 2, allowing you to see the child program's output on
+the same terminal you used to launch the child. Likewise, inetd will
+typically map both stdin and stdout to the network socket, and may map
+stderr to the same socket or to some kind of logging mechanism. This allows
+the child program to be implemented with no knowledge of the network: it
+merely speaks its protocol by doing reads on fd0 and writes on fd1.</p>
+<p>Feeding into a parent's read pipe is used to gather output from the
+child, and is by far the most common way of interacting with child
+processes.</p>
+<p>Feeding from a parent's write pipe allows the parent to control the
+child. Programs like "bc" or "ftp" can be controlled this way, by
+writing commands into their stdin stream.</p>
+<p>The "childFDs" dictionary maps file descriptor numbers (as will be
+seen by the child process) to one of these three states. To map the fd to
+one of the parent's fds, simply provide the fd number as the value. To map
+it to a read pipe, use the string "r" as the value. To map it to a
+write pipe, use the string "w" .</p>
+<p>For example, the default mapping sets up the standard stdin/stdout/stderr
+pipes. It is implemented with the following dictionary:</p>
+<div class="highlight"><pre><span></span><span class="n">childFDs</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">0</span><span class="p">:</span> <span class="s2">"w"</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s2">"r"</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s2">"r"</span> <span class="p">}</span>
+</pre></div>
+<p>To launch a process which reads and writes to the same places that the
+parent python program does, use this:</p>
+<div class="highlight"><pre><span></span><span class="n">childFDs</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+</pre></div>
+<p>To write into an additional fd (say it is fd number 4), use this:</p>
+<div class="highlight"><pre><span></span><span class="n">childFDs</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">0</span><span class="p">:</span> <span class="s2">"w"</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s2">"r"</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s2">"r"</span> <span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s2">"w"</span><span class="p">}</span>
+</pre></div>
+<div class="section" id="processprotocols-with-extra-file-descriptors">
+<h3><a class="toc-backref" href="#id9">ProcessProtocols with extra file descriptors</a></h3>
+<p>When you provide a "childFDs" dictionary with more than the normal
+three fds, you need additional methods to access those pipes. These methods
+are more generalized than the <tt class="docutils literal">.outReceived</tt> ones described above.
+In fact, those methods (<tt class="docutils literal">outReceived</tt> and
+<tt class="docutils literal">errReceived</tt> ) are actually just wrappers left in for
+compatibility with older code, written before this generalized fd mapping was
+implemented. The new list of things that can happen to your ProcessProtocol
+is as follows:</p>
+<ul class="simple">
+<li><tt class="docutils literal">.connectionMade</tt> : This is called when the program is
+started.</li>
+<li><tt class="docutils literal">.childDataReceived(childFD, data)</tt> : This is called with
+data that was received from one of the process' output pipes (i.e. where
+the childFDs value was "r" . The actual file number (from the point of
+view of the child process) is in "childFD" . For compatibility, the
+default implementation of <tt class="docutils literal">.childDataReceived</tt> dispatches to
+<tt class="docutils literal">.outReceived</tt> or <tt class="docutils literal">.errReceived</tt> when "childFD"
+is 1 or 2.</li>
+<li><tt class="docutils literal">.childConnectionLost(childFD)</tt> : This is called when the
+reactor notices that one of the process' pipes has been closed. This
+either means you have just closed down the parent's end of the pipe (with
+<tt class="docutils literal">.transport.closeChildFD</tt> ), the child closed the pipe
+explicitly (sometimes to indicate EOF), or the child process has
+terminated and the kernel has closed all of its pipes. The "childFD"
+argument tells you which pipe was closed. Note that you can only find out
+about file descriptors which were mapped to pipes: when they are mapped to
+existing fds the parent has no way to notice when they've been closed. For
+compatibility, the default implementation dispatches to
+<tt class="docutils literal">.inConnectionLost</tt> , <tt class="docutils literal">.outConnectionLost</tt> , or
+<tt class="docutils literal">.errConnectionLost</tt> .</li>
+<li><tt class="docutils literal">.processEnded(status)</tt> : This is called when the child
+process has been reaped, and all pipes have been closed. This insures that
+all data written by the child prior to its death will be received before
+<tt class="docutils literal">.processEnded</tt> is invoked.</li>
+</ul>
+<p>In addition to those methods, there are other methods available to
+influence the child process:</p>
+<ul class="simple">
+<li><tt class="docutils literal">self.transport.writeToChild(childFD, data)</tt> : Stuff some
+data into an input pipe. <tt class="docutils literal">.write</tt> simply writes to
+childFD=0.</li>
+<li><tt class="docutils literal">self.transport.closeChildFD(childFD)</tt> : Close one of the
+child's pipes. Closing an input pipe is a common way to indicate EOF to
+the child process. Closing an output pipe is neither very friendly nor
+very useful.</li>
+</ul>
+</div>
+<div class="section" id="examples">
+<h3><a class="toc-backref" href="#id10">Examples</a></h3>
+<p>GnuPG, the encryption program, can use additional file descriptors to
+accept a passphrase and emit status output. These are distinct from stdin
+(used to accept the crypttext), stdout (used to emit the plaintext), and
+stderr (used to emit human-readable status/warning messages). The passphrase
+FD reads until the pipe is closed and uses the resulting string to unlock
+the secret key that performs the actual decryption. The status FD emits
+machine-parseable status messages to indicate the validity of the signature,
+which key the message was encrypted to, etc.</p>
+<p>gpg accepts command-line arguments to specify what these fds are, and
+then assumes that they have been opened by the parent before the gpg process
+is started. It simply performs reads and writes to these fd numbers.</p>
+<p>To invoke gpg in decryption/verification mode, you would do something
+like the following:</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">GPGProtocol</span><span class="p">(</span><span class="n">ProcessProtocol</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crypttext</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crypttext</span> <span class="o">=</span> <span class="n">crypttext</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plaintext</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="k">def</span> <span class="nf">connectionMade</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">writeToChild</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">passphrase</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">closeChildFD</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">writeToChild</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">crypttext</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">closeChildFD</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">childDataReceived</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">childFD</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">childFD</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">plaintext</span> <span class="o">+=</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="n">childFD</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">+=</span> <span class="n">data</span>
+    <span class="k">def</span> <span class="nf">processEnded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+        <span class="n">rc</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">exitCode</span>
+        <span class="k">if</span> <span class="n">rc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">deferred</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">deferred</span><span class="o">.</span><span class="n">errback</span><span class="p">(</span><span class="n">rc</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">decrypt</span><span class="p">(</span><span class="n">crypttext</span><span class="p">):</span>
+    <span class="n">gp</span> <span class="o">=</span> <span class="n">GPGProtocol</span><span class="p">(</span><span class="n">crypttext</span><span class="p">)</span>
+    <span class="n">gp</span><span class="o">.</span><span class="n">deferred</span> <span class="o">=</span> <span class="n">Deferred</span><span class="p">()</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"gpg"</span><span class="p">,</span> <span class="s2">"--decrypt"</span><span class="p">,</span> <span class="s2">"--passphrase-fd"</span><span class="p">,</span> <span class="s2">"3"</span><span class="p">,</span> <span class="s2">"--status-fd"</span><span class="p">,</span> <span class="s2">"4"</span><span class="p">,</span>
+           <span class="s2">"--batch"</span><span class="p">]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">reactor</span><span class="o">.</span><span class="n">spawnProcess</span><span class="p">(</span><span class="n">gp</span><span class="p">,</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                             <span class="n">childFDs</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span><span class="s2">"w"</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="s2">"r"</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span><span class="s2">"w"</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span><span class="s2">"r"</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">gp</span><span class="o">.</span><span class="n">deferred</span>
+</pre></div>
+<p>In this example, the status output could be parsed after the fact. It
+could, of course, be parsed on the fly, as it is a simple line-oriented
+protocol. Methods from LineReceiver could be mixed in to make this parsing
+more convenient.</p>
+<p>The stderr mapping ("2:2" ) used will cause any GPG errors to be
+emitted by the parent program, just as if those errors had caused in the
+parent itself. This is sometimes desirable (it roughly corresponds to
+letting exceptions propagate upwards), especially if you do not expect to
+encounter errors in the child process and want them to be more visible to
+the end user. The alternative is to map stderr to a read-pipe and handle any
+such output from within the ProcessProtocol (roughly corresponding to
+catching the exception locally).</p>
+
+</div>
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#overview" id="id1">Overview</a></li>
+<li><a class="reference internal" href="#running-another-process" id="id2">Running Another Process</a></li>
+<li><a class="reference internal" href="#writing-a-processprotocol" id="id3">Writing a ProcessProtocol</a></li>
+<li><a class="reference internal" href="#things-that-can-happen-to-your-processprotocol" id="id4">Things that can happen to your ProcessProtocol</a></li>
+<li><a class="reference internal" href="#things-you-can-do-from-your-processprotocol" id="id5">Things you can do from your ProcessProtocol</a></li>
+<li><a class="reference internal" href="#verbose-example" id="id6">Verbose Example</a></li>
+<li><a class="reference internal" href="#doing-it-the-easy-way" id="id7">Doing it the Easy Way</a></li>
+<li><a class="reference internal" href="#mapping-file-descriptors" id="id8">Mapping File Descriptors</a><ul>
+<li><a class="reference internal" href="#processprotocols-with-extra-file-descriptors" id="id9">ProcessProtocols with extra file descriptors</a></li>
+<li><a class="reference internal" href="#examples" id="id10">Examples</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

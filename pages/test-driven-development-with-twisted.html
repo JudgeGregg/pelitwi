@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Test-driven development with Twisted</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Test-driven development with Twisted</h1>
+        
+        <div class="entry-content">
+        <p>Writing good code is hard, or at least it can be.
+A major challenge is to ensure that your code remains correct as you add new functionality.</p>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Unit_test">Unit testing</a> is a modern, light-weight testing methodology in widespread use in many programming languages.
+Development that relies on unit tests is often referred to as Test-Driven Development (<a class="reference external" href="https://en.wikipedia.org/wiki/Test-driven_development">TDD</a> ).
+Most Twisted code is tested using TDD.</p>
+<p>To gain a solid understanding of unit testing in Python, you should read the <cite>unittest -- Unit testing framework chapter &lt;unittest&gt;</cite> of the <a class="reference external" href="https://docs.python.org/3/library/">Python Library Reference</a>.
+There is a lot of information available online and in books.</p>
+<div class="section" id="introductory-example-of-python-unit-testing">
+<h2><a class="toc-backref" href="#id1">Introductory example of Python unit testing</a></h2>
+<p>This document is principally a guide to Trial, Twisted's unit testing framework.
+Trial is based on Python's unit testing framework.
+While we do not aim to give a comprehensive guide to general Python unit testing, it will be helpful to consider a simple non-networked example before expanding to cover networking code that requires the special capabilities of Trial.
+If you are already familiar with unit test in Python, jump straight to the section specific to <cite>testing Twisted code &lt;core-howto-trial-twisted&gt;</cite>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">In what follows we will make a series of refinements to some simple classes.
+In order to keep the examples and source code links complete and to allow you to run Trial on the intermediate results at every stage, I add <tt class="docutils literal">_N</tt> (where the <tt class="docutils literal">N</tt>  are successive integers) to file names to keep them separate.
+This is a minor visual distraction that should be ignored.</p>
+</div>
+</div>
+<div class="section" id="creating-an-api-and-writing-tests">
+<h2><a class="toc-backref" href="#id2">Creating an API and writing tests</a></h2>
+<p>We'll create a library for arithmetic calculation.
+First, create a project structure with a directory called <tt class="docutils literal">calculus</tt> containing an empty <tt class="docutils literal">__init__.py</tt> file.</p>
+<p>Then put the following simple class definition API into <tt class="docutils literal">calculus/base_1.py</tt> :</p>
+<p><cite>base_1.py &lt;listings/trial/calculus/base_1.py&gt;</cite></p>
+<p>(Ignore the <tt class="docutils literal"><span class="pre">test-case-name</span></tt> comment for now. You'll see why that's useful <cite>below &lt;core-howto-trial-comment&gt;</cite> .)</p>
+<p>We've written the interface, but not the code.
+Now we'll write a set of tests.
+At this point of development, we'll be expecting all tests to fail.
+Don't worry, that's part of the point. Once we have a test framework functioning, and we have some decent tests written (and failing!), we'll go and do the actual development of our calculation API.
+This is the preferred way to work for many people using TDD - write tests first, make sure they fail, then do development.
+Others are not so strict and write tests after doing the development.</p>
+<p>Create a <tt class="docutils literal">test</tt> directory beneath <tt class="docutils literal">calculus</tt> , with an empty <tt class="docutils literal">__init__.py</tt> file.
+In a <tt class="docutils literal">calculus/test/test_base_1.py</tt>, put the following:</p>
+<p><cite>test_base_1.py &lt;listings/trial/calculus/test/test_base_1.py&gt;</cite></p>
+<p>You should now have the following 4 files:</p>
+<div class="highlight"><pre><span></span><span class="go">calculus/__init__.py</span>
+<span class="go">calculus/base_1.py</span>
+<span class="go">calculus/test/__init__.py</span>
+<span class="go">calculus/test/test_base_1.py</span>
+</pre></div>
+<p>To run the tests, you must ensure you are able to load them.
+Make sure you are in the directory that the <tt class="docutils literal">calculus</tt> folder is in, if you run <tt class="docutils literal">ls</tt> or <tt class="docutils literal">dir</tt> you should see the folder.
+You can test that you can import the <tt class="docutils literal">calculus</tt> package by running <tt class="docutils literal">python <span class="pre">-c</span> import calculus</tt>.
+If it reports an error ("No module named calculus"), double check you are in the correct directory.</p>
+<p>Run <tt class="docutils literal">python <span class="pre">-m</span> twisted.trial calculus.test.test_base_1</tt> from the command line when you are in the directory containing the <tt class="docutils literal">calculus</tt> directory.</p>
+<p>You should see the following output (though your files are probably not in <tt class="docutils literal">/tmp</tt> ):</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>python -m twisted.trial calculus.test.test_base_1
+<span class="go">calculus.test.test_base_1</span>
+<span class="go">  CalculationTestCase</span>
+<span class="go">    test_add ...                                                         [FAIL]</span>
+<span class="go">    test_divide ...                                                      [FAIL]</span>
+<span class="go">    test_multiply ...                                                    [FAIL]</span>
+<span class="go">    test_subtract ...                                                    [FAIL]</span>
+
+<span class="go">===============================================================================</span>
+<span class="go">[FAIL]</span>
+<span class="go">Traceback (most recent call last):</span>
+<span class="go">  File "/tmp/calculus/test/test_base_1.py", line 8, in test_add</span>
+<span class="go">    self.assertEqual(result, 11)</span>
+<span class="go">twisted.trial.unittest.FailTest: not equal:</span>
+<span class="go">a = None</span>
+<span class="go">b = 11</span>
+
+
+<span class="go">calculus.test.test_base_1.CalculationTestCase.test_add</span>
+<span class="go">===============================================================================</span>
+<span class="go">[FAIL]</span>
+<span class="go">Traceback (most recent call last):</span>
+<span class="go">  File "/tmp/calculus/test/test_base_1.py", line 23, in test_divide</span>
+<span class="go">    self.assertEqual(result, 2)</span>
+<span class="go">twisted.trial.unittest.FailTest: not equal:</span>
+<span class="go">a = None</span>
+<span class="go">b = 2</span>
+
+
+<span class="go">calculus.test.test_base_1.CalculationTestCase.test_divide</span>
+<span class="go">===============================================================================</span>
+<span class="go">[FAIL]</span>
+<span class="go">Traceback (most recent call last):</span>
+<span class="go">  File "/tmp/calculus/test/test_base_1.py", line 18, in test_multiply</span>
+<span class="go">    self.assertEqual(result, 60)</span>
+<span class="go">twisted.trial.unittest.FailTest: not equal:</span>
+<span class="go">a = None</span>
+<span class="go">b = 60</span>
+
+
+<span class="go">calculus.test.test_base_1.CalculationTestCase.test_multiply</span>
+<span class="go">===============================================================================</span>
+<span class="go">[FAIL]</span>
+<span class="go">Traceback (most recent call last):</span>
+<span class="go">  File "/tmp/calculus/test/test_base_1.py", line 13, in test_subtract</span>
+<span class="go">    self.assertEqual(result, 4)</span>
+<span class="go">twisted.trial.unittest.FailTest: not equal:</span>
+<span class="go">a = None</span>
+<span class="go">b = 4</span>
+
+
+<span class="go">calculus.test.test_base_1.CalculationTestCase.test_subtract</span>
+<span class="go">-------------------------------------------------------------------------------</span>
+<span class="go">Ran 4 tests in 0.042s</span>
+
+<span class="go">FAILED (failures=4)</span>
+</pre></div>
+<p>How to interpret this output? You get a list of the individual tests, each followed by its result.
+By default, failures are printed at the end, but this can be changed with the <tt class="docutils literal"><span class="pre">-e</span></tt> (or <tt class="docutils literal"><span class="pre">--rterrors</span></tt> ) option.</p>
+<p>One very useful thing in this output is the fully-qualified name of the failed tests.
+This appears at the bottom of each =-delimited area of the output.
+This allows you to copy and paste it to just run a single test you're interested in.
+In our example, you could run <tt class="docutils literal">python <span class="pre">-m</span> twisted.trial calculus.test.test_base_1.CalculationTestCase.test_subtract</tt> from the shell.</p>
+<p>Note that trial can use different reporters to modify its output. Run <tt class="docutils literal">python <span class="pre">-m</span> twisted.trial <span class="pre">--help-reporters</span></tt> to see a list of reporters.</p>
+<p>The tests can be run by Trial in multiple ways:</p>
+<ul class="simple" id="core-howto-trial-comment">
+<li><tt class="docutils literal">python <span class="pre">-m</span> twisted.trial calculus</tt>: run all the tests for the calculus package.</li>
+<li><tt class="docutils literal">python <span class="pre">-m</span> twisted.trial calculus.test</tt>: run using Python's <tt class="docutils literal">import</tt> notation.</li>
+<li><tt class="docutils literal">python <span class="pre">-m</span> twisted.trial calculus.test.test_base_1</tt>: as above, for a specific test module.
+You can follow that logic by putting your class name and even a method name to only run those specific tests.</li>
+<li><tt class="docutils literal">python <span class="pre">-m</span> twisted.trial <span class="pre">--testmodule=calculus/base_1.py</span></tt>: use the <tt class="docutils literal"><span class="pre">test-case-name</span></tt> comment in the first line of <tt class="docutils literal">calculus/base_1.py</tt> to find the tests.</li>
+<li><tt class="docutils literal">python <span class="pre">-m</span> twisted.trial calculus/test</tt>: run all the tests in the test directory (not recommended).</li>
+<li><tt class="docutils literal">python <span class="pre">-m</span> twisted.trial calculus/test/test_base_1.py</tt>: run a specific test file (not recommended).</li>
+</ul>
+<p>The first 3 versions using full qualified names are strongly encouraged: they are much more reliable and they allow you to easily be more selective in your test runs.</p>
+<p>You'll notice that Trial creates a <tt class="docutils literal">_trial_temp</tt> directory in the directory where you run the tests. This has a file called <tt class="docutils literal">test.log</tt> which contains the log output of the tests (created using <tt class="docutils literal">log.msg</tt> or <tt class="docutils literal">log.err</tt> functions).
+Examine this file if you add logging to your tests.</p>
+</div>
+<div class="section" id="making-the-tests-pass">
+<h2><a class="toc-backref" href="#id3">Making the tests pass</a></h2>
+<p>Now that we have a working test framework in place, and our tests are failing (as expected) we can go and try to implement the correct API.
+We'll do that in a new version of the above base_1 module, <tt class="docutils literal">calculus/base_2.py</tt> :</p>
+<p><cite>base_2.py &lt;listings/trial/calculus/base_2.py&gt;</cite></p>
+<p>We'll also create a new version of test_base_1 which imports and test this new implementation, in <tt class="docutils literal">calculus/test_base_2.py</tt>:</p>
+<p><cite>test_base_2.py &lt;listings/trial/calculus/test/test_base_2.py&gt;</cite></p>
+<p>is a copy of test_base_1, but with the import changed. Run Trial again as above, and your tests should now pass:</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>python -m twisted.trial calculus.test.test_base_2
+
+<span class="go">Running 4 tests.</span>
+<span class="go">calculus.test.test_base</span>
+<span class="go">  CalculationTestCase</span>
+<span class="go">    test_add ...                                                           [OK]</span>
+<span class="go">    test_divide ...                                                        [OK]</span>
+<span class="go">    test_multiply ...                                                      [OK]</span>
+<span class="go">    test_subtract ...                                                      [OK]</span>
+
+<span class="go">-------------------------------------------------------------------------------</span>
+<span class="go">Ran 4 tests in 0.067s</span>
+
+<span class="go">PASSED (successes=4)</span>
+</pre></div>
+<div class="section" id="factoring-out-common-test-logic">
+<h3><a class="toc-backref" href="#id4">Factoring out common test logic</a></h3>
+<p>You'll notice that our test file contains redundant code. Let's get rid
+of that. Python's unit testing framework allows your test class to define a
+<tt class="docutils literal">setUp</tt> method that is called before
+<em>each</em> test method in the class. This allows you to add attributes
+to <tt class="docutils literal">self</tt> that can be used in test
+methods. We'll also add a parameterized test method to further simplify the
+code.</p>
+<p>Note that a test class may also provide the counterpart of <tt class="docutils literal">setUp</tt> , named <tt class="docutils literal">tearDown</tt> ,
+which will be called after <em>each</em> test (whether successful or
+not). <tt class="docutils literal">tearDown</tt> is mainly used for post-test
+cleanup purposes. We will not use <tt class="docutils literal">tearDown</tt>
+until later.</p>
+<p>Create <tt class="docutils literal">calculus/test/test_base_2b.py</tt> as follows:</p>
+<p><cite>test_base_2b.py &lt;listings/trial/calculus/test/test_base_2b.py&gt;</cite></p>
+<p>Much cleaner, isn't it?</p>
+<p>We'll now add some additional error tests. Testing just for successful
+use of the API is generally not enough, especially if you expect your code
+to be used by others. Let's make sure the <tt class="docutils literal">Calculation</tt> class raises exceptions if someone tries
+to call its methods with arguments that cannot be converted to
+integers.</p>
+<p>We arrive at <tt class="docutils literal">calculus/test/test_base_3.py</tt>:</p>
+<p><cite>test_base_3.py &lt;listings/trial/calculus/test/test_base_3.py&gt;</cite></p>
+<p>We've added four new tests and one general-purpose function, <tt class="docutils literal">_test_error</tt> . This function uses the <tt class="docutils literal">assertRaises</tt> method, which takes an exception class,
+a function to run and its arguments, and checks that calling the function
+on the arguments does indeed raise the given exception.</p>
+<p>If you run the above, you'll see that not all tests fail. In Python it's
+often valid to add and multiply objects of different and even differing
+types, so the code in the add and multiply tests does not raise an exception
+and those tests therefore fail. So let's add explicit type conversion to
+our API class. This brings us to <tt class="docutils literal">calculus/base_3.py</tt> :</p>
+<p><cite>base_3.py &lt;listings/trial/calculus/base_3.py&gt;</cite></p>
+<p>Here the <tt class="docutils literal">_make_ints</tt> helper function tries to convert a list into a list of equivalent integers, and raises a <tt class="docutils literal">TypeError</tt> in case the conversion goes wrong.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <tt class="docutils literal">int</tt> conversion can also raise a <tt class="docutils literal">TypeError</tt> if passed something of
+the wrong type, such as a list. We'll just let that exception go by, as
+<tt class="docutils literal">TypeError</tt> is already what we want in case something goes wrong.</p>
+</div>
+</div>
+</div>
+<div class="section" id="twisted-specific-testing">
+<span id="core-howto-trial-twisted"></span><h2><a class="toc-backref" href="#id5">Twisted specific testing</a></h2>
+<p>Up to this point we've been doing fairly standard Python unit testing.
+With only a few cosmetic changes (most importantly, directly importing
+<tt class="docutils literal">unittest</tt> instead of using Twisted's <cite>unittest &lt;twisted.trial.unittest&gt;</cite> version) we could make the
+above tests run using Python's standard library unit testing framework.</p>
+<p>Here we will assume a basic familiarity with Twisted's network I/O, timing,
+and Deferred APIs.  If you haven't already read them, you should read the
+documentation on <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-servers.html">Writing Servers</a> , <cite>Writing Clients &lt;clients&gt;</cite> ,
+and <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deferred-reference.html">Deferreds</a> .</p>
+<p>Now we'll get to the real point of this tutorial and take advantage of Trial to test Twisted code.</p>
+</div>
+<div class="section" id="testing-a-protocol">
+<h2><a class="toc-backref" href="#id6">Testing a protocol</a></h2>
+<p>We'll now create a custom protocol to invoke our class from a
+telnet-like session. We'll remotely call commands with arguments and read back
+the response. The goal will be to test our network code without creating
+sockets.</p>
+<div class="section" id="creating-and-testing-the-server">
+<h3><a class="toc-backref" href="#id7">Creating and testing the server</a></h3>
+<p>First we'll write the tests, and then explain what they do.  The first
+version of the remote test code is:</p>
+<p><cite>test_remote_1.py &lt;listings/trial/calculus/test/test_remote_1.py&gt;</cite></p>
+<p>To fully understand this client, it helps a lot to be comfortable with the Factory/Protocol/Transport pattern used in Twisted.</p>
+<p>We first create a protocol factory object. Note that we have yet to see
+the <tt class="docutils literal">RemoteCalculationFactory</tt> class. It is in
+<tt class="docutils literal">calculus/remote_1.py</tt> below. We
+call <tt class="docutils literal">buildProtocol</tt> to ask the factory to build us a
+protocol object that knows how to talk to our server.  We then make a fake
+network transport, an instance of <tt class="docutils literal">twisted.test.proto_helpers.StringTransport</tt>
+class (note that test packages are generally not part of Twisted's public API;``twisted.test.proto_helpers`` is an exception).  This fake
+transport is the key to the communications. It is used to emulate a network
+connection without a network. The address and port passed to <tt class="docutils literal">buildProtocol</tt>
+are typically used by the factory to choose to immediately deny remote connections; since we're using a fake transport, we can choose any value that will be acceptable to the factory. In this case the factory just ignores the address, so we don't need to pick anything in particular.</p>
+<p>Testing protocols without the use of real network connections is both simple and recommended when testing Twisted
+code.  Even though there are many tests in Twisted that use the network,
+most good tests don't. The problem with unit tests and networking is that
+networks aren't reliable. We cannot know that they will exhibit reasonable
+behavior all the time. This creates intermittent test failures due to
+network vagaries. Right now we're trying to test our Twisted code, not
+network reliability.  By setting up and using a fake transport, we can
+write 100% reliable tests. We can also test network failures in a deterministic manner, another important part of your complete test suite.</p>
+<p>The final key to understanding this client code is the <tt class="docutils literal">_test</tt> method. The call to <tt class="docutils literal">dataReceived</tt> simulates data arriving on the network
+transport. But where does it arrive? It's handed to the <tt class="docutils literal">lineReceived</tt> method of the protocol instance (in
+<tt class="docutils literal">calculus/remote_1.py</tt> below). So the client
+is essentially tricking the server into thinking it has received the
+operation and the arguments over the network. The server (once again, see
+below) hands over the work to its <tt class="docutils literal">CalculationProxy</tt> object which in turn hands it to its
+<tt class="docutils literal">Calculation</tt> instance. The result is written
+back via <tt class="docutils literal">sendLine</tt> (into the fake string
+transport object), and is then immediately available to the client, who
+fetches it with <tt class="docutils literal">tr.value()</tt> and checks that it
+has the expected value. So there's quite a lot going on behind the scenes
+in the two-line <tt class="docutils literal">_test</tt> method above.</p>
+<p><em>Finally</em> , let's see the implementation of this protocol. Put the
+following into <tt class="docutils literal">calculus/remote_1.py</tt> :</p>
+<p><cite>remote_1.py &lt;listings/trial/calculus/remote_1.py&gt;</cite></p>
+<p>As mentioned, this server creates a protocol that inherits from <cite>basic.LineReceiver &lt;twisted.protocols.basic.LineReceiver&gt;</cite> , and then a
+factory that uses it as protocol. The only trick is the <tt class="docutils literal">CalculationProxy</tt> object, which calls <tt class="docutils literal">Calculation</tt> methods through <tt class="docutils literal">remote_*</tt> methods. This pattern is used frequently in
+Twisted, because it is very explicit about what methods you are making
+accessible.</p>
+<p>If you run this test (<tt class="docutils literal">python <span class="pre">-m</span> twisted.trial calculus.test.test_remote_1</tt> ), everything should be fine. You can also
+run a server to test it with a telnet client. To do that, call <tt class="docutils literal">python calculus/remote_1.py</tt> . You should have the following output:</p>
+<div class="highlight"><pre><span></span><span class="go">2008-04-25 10:53:27+0200 [-] Log opened.</span>
+<span class="go">2008-04-25 10:53:27+0200 [-] __main__.RemoteCalculationFactory starting on 46194</span>
+<span class="go">2008-04-25 10:53:27+0200 [-] Starting factory &lt;__main__.RemoteCalculationFactory instance at 0x846a0cc&gt;</span>
+</pre></div>
+<p>46194 is replaced by a random port. You can then call telnet on it:</p>
+<pre class="literal-block">
+$ telnet localhost 46194
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+add 4123 9423
+13546
+</pre>
+<p>It works!</p>
+</div>
+<div class="section" id="creating-and-testing-the-client">
+<h3><a class="toc-backref" href="#id8">Creating and testing the client</a></h3>
+<p>Of course, what we build is not particularly useful for now: we'll now build
+a client for our server, to be able to use it inside a Python program. And it
+will serve our next purpose.</p>
+<p>Create <tt class="docutils literal">calculus/test/test_client_1.py</tt>:</p>
+<p><cite>test_client_1.py &lt;listings/trial/calculus/test/test_client_1.py&gt;</cite></p>
+<p>It's really symmetric to the server test cases. The only tricky part is
+that we don't use a client factory. We're lazy, and it's not very useful in
+the client part, so we instantiate the protocol directly.</p>
+<p>Incidentally, we have introduced a very important concept here: the tests
+now return a Deferred object, and the assertion is done in a callback. When
+a test returns a Deferred, the reactor is run until the Deferred fires and
+its callbacks run.  The
+important thing to do here is to <strong>not forget to return the Deferred</strong> . If you do, your tests will pass even if nothing is asserted.
+That's also why it's important to make tests fail first: if your tests pass
+whereas you know they shouldn't, there is a problem in your tests.</p>
+<p>We'll now add the remote client class to produce <tt class="docutils literal">calculus/client_1.py</tt> :</p>
+<p><cite>client_1.py &lt;listings/trial/calculus/client_1.py&gt;</cite></p>
+</div>
+</div>
+<div class="section" id="more-good-practices">
+<h2><a class="toc-backref" href="#id9">More good practices</a></h2>
+<div class="section" id="testing-scheduling">
+<h3><a class="toc-backref" href="#id10">Testing scheduling</a></h3>
+<p>When testing code that involves the passage of time, waiting e.g. for a two hour timeout to occur in a test is not very realistic. Twisted provides a solution to this, the <cite>Clock &lt;twisted.internet.task.Clock&gt;</cite> class that allows one to simulate the passage of time.</p>
+<p>As an example we'll test the code for client request timeout: since our client
+uses TCP it can hang for a long time (firewall, connectivity problems, etc...).
+So generally we need to implement timeouts on the client side. Basically it's
+just that we send a request, don't receive a response and expect a timeout error
+to be triggered after a certain duration.</p>
+<p><cite>test_client_2.py &lt;listings/trial/calculus/test/test_client_2.py&gt;</cite></p>
+<p>What happens here? We instantiate our protocol as usual, the only trick
+is to create the clock, and assign <tt class="docutils literal">proto.callLater</tt> to
+<tt class="docutils literal">clock.callLater</tt> . Thus, every <tt class="docutils literal">callLater</tt>
+call in the protocol will finish before <tt class="docutils literal">clock.advance()</tt> returns.</p>
+<p>In the new test (test_timeout), we call <tt class="docutils literal">clock.advance</tt> , that simulates an advance in time
+(logically it's similar to a <tt class="docutils literal">time.sleep</tt> call). And
+we just have to verify that our Deferred got a timeout error.</p>
+<p>Let's implement that in our code.</p>
+<p><cite>client_2.py &lt;listings/trial/calculus/client_2.py&gt;</cite></p>
+<p>If everything completed successfully, it is important to remember to cancel the <tt class="docutils literal">DelayedCall</tt> returned by <tt class="docutils literal">callLater</tt> .</p>
+</div>
+<div class="section" id="cleaning-up-after-tests">
+<h3><a class="toc-backref" href="#id11">Cleaning up after tests</a></h3>
+<p>This chapter is mainly intended for people who want to have sockets or
+processes created in their tests. If it's still not obvious, you must try to
+avoid using them, because it ends up with a lot of problems, one of
+them being intermittent failures. And intermittent failures are the plague
+of automated tests.</p>
+<p>To actually test that, we'll launch a server with our protocol.</p>
+<p><cite>test_remote_2.py &lt;listings/trial/calculus/test/test_remote_2.py&gt;</cite></p>
+<p>Recent versions of Trial will fail loudly if you remove the <tt class="docutils literal">stopListening</tt> call, which is good.</p>
+<p>Also, you should be aware that <tt class="docutils literal">tearDown</tt> will be called in any case, after success or failure.
+So don't expect every object you created in the test method to be present, because your tests may have failed in the middle.</p>
+<p>Trial also has a <tt class="docutils literal">addCleanup</tt> method, which makes these kind of cleanups easy and removes the need for <tt class="docutils literal">tearDown</tt>.
+For example, you could remove the code in <tt class="docutils literal">_test</tt> this way:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">RemoteCalculationFactory</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">reactor</span><span class="o">.</span><span class="n">listenTCP</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">factory</span><span class="p">,</span> <span class="n">interface</span><span class="o">=</span><span class="s2">"127.0.0.1"</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">addCleanup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="o">.</span><span class="n">stopListening</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
+    <span class="n">creator</span> <span class="o">=</span> <span class="n">protocol</span><span class="o">.</span><span class="n">ClientCreator</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="n">RemoteCalculationClient</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">client</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addCleanup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">loseConnection</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">op</span><span class="p">)(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">creator</span><span class="o">.</span><span class="n">connectTCP</span><span class="p">(</span><span class="s1">'127.0.0.1'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="o">.</span><span class="n">getHost</span><span class="p">()</span><span class="o">.</span><span class="n">port</span><span class="p">)</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
+</pre></div>
+<p>This removes the need of a <tt class="docutils literal">tearDown</tt> method, and you don't have to check for
+the value of self.client: you only call addCleanup when the client is
+created.</p>
+</div>
+<div class="section" id="handling-logged-errors">
+<h3><a class="toc-backref" href="#id12">Handling logged errors</a></h3>
+<p>Currently, if you send an invalid command or invalid arguments to our
+server, it logs an exception and closes the connection. This is a perfectly
+valid behavior, but for the sake of this tutorial, we want to return an error
+to the user if they send invalid operators, and log any errors on server side.
+So we'll want a test like this:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">test_invalidParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">proto</span><span class="o">.</span><span class="n">dataReceived</span><span class="p">(</span><span class="s1">'add foo bar</span><span class="se">\r\n</span><span class="s1">'</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tr</span><span class="o">.</span><span class="n">value</span><span class="p">(),</span> <span class="s2">"error</span><span class="se">\r\n</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+<p><cite>remote_2.py &lt;listings/trial/calculus/remote_2.py&gt;</cite></p>
+<p>If you try something like that, it will not work. Here is the output you should have:</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>python -m twisted.trial calculus.test.test_remote_3.RemoteCalculationTestCase.test_invalidParameters
+<span class="go">calculus.test.test_remote_3</span>
+<span class="go">  RemoteCalculationTestCase</span>
+<span class="go">    test_invalidParameters ...                                          [ERROR]</span>
+
+<span class="go">===============================================================================</span>
+<span class="go">[ERROR]: calculus.test.test_remote_3.RemoteCalculationTestCase.test_invalidParameters</span>
+
+<span class="go">Traceback (most recent call last):</span>
+<span class="go">  File "/tmp/calculus/remote_2.py", line 27, in lineReceived</span>
+<span class="go">    result = op(a, b)</span>
+<span class="go">  File "/tmp/calculus/base_3.py", line 11, in add</span>
+<span class="go">    a, b = self._make_ints(a, b)</span>
+<span class="go">  File "/tmp/calculus/base_3.py", line 8, in _make_ints</span>
+<span class="go">    raise TypeError</span>
+<span class="go">exceptions.TypeError:</span>
+<span class="go">-------------------------------------------------------------------------------</span>
+<span class="go">Ran 1 tests in 0.004s</span>
+
+<span class="go">FAILED (errors=1)</span>
+</pre></div>
+<p>At first, you could think there is a problem, because you catch this
+exception. But in fact Trial doesn't let you do that without controlling it:
+you must expect logged errors and clean them. To do that, you have to use the
+<tt class="docutils literal">flushLoggedErrors</tt> method. You call it with the
+exception you expect, and it returns the list of exceptions logged since the
+start of the test. Generally, you'll want to check that this list has the
+expected length, or possibly that each exception has an expected message. We do
+the former in our test:</p>
+<p><cite>test_remote_3.py &lt;listings/trial/calculus/test/test_remote_3.py&gt;</cite></p>
+</div>
+</div>
+<div class="section" id="resolve-a-bug">
+<h2><a class="toc-backref" href="#id13">Resolve a bug</a></h2>
+<p>A bug was left over during the development of the timeout (probably several
+bugs, but that's not the point), concerning the reuse of the protocol when you
+got a timeout: the connection is not dropped, so you can get timeout forever.
+Generally a user will come to you saying "I have this strange problem on
+my crappy network. It seems you could solve it with doing XXX at
+YYY."</p>
+<p>Actually, this bug can be corrected several ways. But if you correct it
+without adding tests, one day you'll face a big problem: regression.
+So the first step is adding a failing test.</p>
+<p><cite>test_client_3.py &lt;listings/trial/calculus/test/test_client_3.py&gt;</cite></p>
+<p>What have we done here?</p>
+<ul class="simple">
+<li>We switched to StringTransportWithDisconnection. This transport manages
+<tt class="docutils literal">loseConnection</tt> and forwards it to its protocol.</li>
+<li>We assign the protocol to the transport via the <tt class="docutils literal">protocol</tt> attribute.</li>
+<li>We check that after a timeout our connection has closed.</li>
+</ul>
+<p>For doing that, we then use the <tt class="docutils literal">TimeoutMixin</tt>
+class, that does almost everything we want. The great thing is that it almost
+changes nothing to our class.</p>
+<p><cite>client_3.py &lt;listings/trial/calculus/client_3.py&gt;</cite></p>
+</div>
+<div class="section" id="testing-deferreds-without-the-reactor">
+<h2><a class="toc-backref" href="#id14">Testing Deferreds without the reactor</a></h2>
+<p>Above we learned about returning Deferreds from test methods in order to make
+assertions about their results, or side-effects that only happen after they
+fire.  This can be useful, but we don't actually need the feature in this
+example.  Because we were careful to use <tt class="docutils literal">Clock</tt> , we
+don't need the global reactor to run in our tests.  Instead of returning the
+Deferred with a callback attached to it which performs the necessary assertions,
+we can use a testing helper,
+<cite>successResultOf &lt;twisted.trial._synctest._Assertions.successResultOf&gt;</cite> (and
+the corresponding error-case helper
+<cite>failureResultOf &lt;twisted.trial._synctest._Assertions.failureResultOf&gt;</cite> ), to
+extract its result and make assertions against it directly.  Compared to
+returning a Deferred, this avoids the problem of forgetting to return the
+Deferred, improves the stack trace reported when the assertion fails, and avoids
+the complexity of using global reactor (which, for example, may then require
+cleanup).</p>
+<p><cite>test_client_4.py &lt;listings/trial/calculus/test/test_client_4.py&gt;</cite></p>
+<p>This version of the code makes the same assertions, but no longer returns any
+Deferreds from any test methods.  Instead of making assertions about the result
+of the Deferred in a callback, it makes the assertions as soon as
+it <em>knows</em> the Deferred is supposed to have a result (in
+the <tt class="docutils literal">_test</tt> method and in <tt class="docutils literal">test_timeout</tt>
+and <tt class="docutils literal">test_timeoutConnectionLost</tt> ).  The possibility
+of <em>knowing</em> exactly when a Deferred is supposed to have a test is what
+makes <tt class="docutils literal">successResultOf</tt> useful in unit testing, but prevents it from being
+applicable to non-testing purposes.</p>
+<p><tt class="docutils literal">successResultOf</tt> will raise an exception (failing the test) if
+the <tt class="docutils literal">Deferred</tt> passed to it does not have a result, or has a failure
+result.  Similarly, <tt class="docutils literal">failureResultOf</tt> will raise an exception (also
+failing the test) if the <tt class="docutils literal">Deferred</tt> passed to it does not have a
+result, or has a success result.  There is a third helper method for testing the
+final case,
+<cite>assertNoResult &lt;twisted.trial._synctest._Assertions.assertNoResult&gt;</cite> ,
+which only raises an exception (failing the test) if the <tt class="docutils literal">Deferred</tt> passed
+to it <em>has</em> a result (either success or failure).</p>
+</div>
+<div class="section" id="dropping-into-a-debugger">
+<h2><a class="toc-backref" href="#id15">Dropping into a debugger</a></h2>
+<p>In the course of writing and running your tests, it is often helpful to
+employ the use of a debugger. This can be particularly helpful in tracking down
+where the source of a troublesome bug is in your code. Python's standard library
+includes a debugger in the form of the <cite>pdb</cite> module.
+Running your tests with <tt class="docutils literal">pdb</tt> is as simple as invoking
+twisted with the <tt class="docutils literal"><span class="pre">--debug</span></tt> option, which will start <tt class="docutils literal">pdb</tt> at the beginning of the execution of your test
+suite.</p>
+<p>Trial also provides a <tt class="docutils literal"><span class="pre">--debugger</span></tt> option which can
+run your test suite using another debugger instead. To specify a debugger other
+than <tt class="docutils literal">pdb</tt> , pass in the fully-qualified name of an
+object that provides the same interface as <tt class="docutils literal">pdb</tt> .
+Most third-party debuggers tend to implement an interface similar to <tt class="docutils literal">pdb</tt> , or at least provide a wrapper object that
+does. For example, invoking Trial with the extra arguments <tt class="docutils literal"><span class="pre">--debug</span> <span class="pre">--debugger</span> pudb</tt> will open the <a class="reference external" href="https://pypi.org/project/pudb">PuDB</a> debugger instead, provided
+it is properly installed.</p>
+</div>
+<div class="section" id="code-coverage">
+<h2><a class="toc-backref" href="#id16">Code coverage</a></h2>
+<p>Code coverage is one of the aspects of software testing that shows how much
+your tests cross (cover) the code of your program. There are different kinds of
+measures: path coverage, condition coverage, statement coverage... We'll only
+consider statement coverage here, whether a line has been executed or not.</p>
+<p>Trial has an option to generate the statement coverage of your tests.
+This option is --coverage. It creates a coverage directory in _trial_temp,
+with a file .cover for every module used during the tests. The ones
+interesting for us are calculus.base.cover and calculus.remote.cover. Each line
+starts with a counter showing how many times the line was executed during the
+tests, or the marker '&gt;&gt;&gt;&gt;&gt;&gt;' if the line was not
+covered. If you went through the whole tutorial to this point, you should
+have complete coverage :).</p>
+<p>Again, this is only another useful pointer, but it doesn't mean your
+code is perfect: your tests should consider every possible input and
+output, to get <strong>full</strong> coverage (condition, path, etc.) as well .</p>
+</div>
+<div class="section" id="conclusion">
+<h2><a class="toc-backref" href="#id17">Conclusion</a></h2>
+<p>So what did you learn in this document?</p>
+<ul class="simple">
+<li>How to use the Trial command-line tool to run your tests</li>
+<li>How to use string transports to test individual clients and servers without creating sockets</li>
+<li>If you really want to create sockets, how to cleanly do it so that it doesn't have bad side effects</li>
+<li>And some small tips you can't live without.</li>
+</ul>
+<p>If one of the topics still looks cloudy to you, please give us your feedback!
+You can file tickets to improve this document - learn how to contribute <a class="reference external" href="https://twistedmatrix.com/trac/wiki/TwistedDevelopment/">on the Twisted web site</a>.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introductory-example-of-python-unit-testing" id="id1">Introductory example of Python unit testing</a></li>
+<li><a class="reference internal" href="#creating-an-api-and-writing-tests" id="id2">Creating an API and writing tests</a></li>
+<li><a class="reference internal" href="#making-the-tests-pass" id="id3">Making the tests pass</a><ul>
+<li><a class="reference internal" href="#factoring-out-common-test-logic" id="id4">Factoring out common test logic</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#twisted-specific-testing" id="id5">Twisted specific testing</a></li>
+<li><a class="reference internal" href="#testing-a-protocol" id="id6">Testing a protocol</a><ul>
+<li><a class="reference internal" href="#creating-and-testing-the-server" id="id7">Creating and testing the server</a></li>
+<li><a class="reference internal" href="#creating-and-testing-the-client" id="id8">Creating and testing the client</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#more-good-practices" id="id9">More good practices</a><ul>
+<li><a class="reference internal" href="#testing-scheduling" id="id10">Testing scheduling</a></li>
+<li><a class="reference internal" href="#cleaning-up-after-tests" id="id11">Cleaning up after tests</a></li>
+<li><a class="reference internal" href="#handling-logged-errors" id="id12">Handling logged errors</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#resolve-a-bug" id="id13">Resolve a bug</a></li>
+<li><a class="reference internal" href="#testing-deferreds-without-the-reactor" id="id14">Testing Deferreds without the reactor</a></li>
+<li><a class="reference internal" href="#dropping-into-a-debugger" id="id15">Dropping into a debugger</a></li>
+<li><a class="reference internal" href="#code-coverage" id="id16">Code coverage</a></li>
+<li><a class="reference internal" href="#conclusion" id="id17">Conclusion</a></li>
+</ul>
+</div>
+
+<h4>Previous topic</h4>
+<p class="topless">
+<a href=https://judgegregg.github.io/pelitwi/pages/writing-clients.html>Writing Clients</a>
+</p>
+<h4>Next topic</h4>
+<p class="topless">
+<a href=https://judgegregg.github.io/pelitwi/pages/twisted-from-scratch-or-the-evolution-of-finger.html>Twisted from Scratch, or The Evolution of Finger</a>
+</p>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

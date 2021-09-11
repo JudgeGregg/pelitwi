@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Static URL Dispatch</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Static URL Dispatch</h1>
+        
+        <div class="entry-content">
+        <p>The goal of this example is to show you how to serve different content at
+different URLs.</p>
+<p>The key to understanding how different URLs are handled with the resource
+APIs in Twisted Web is understanding that any URL can be used to address a node
+in a tree. Resources in Twisted Web exist in such a tree, and a request for a
+URL will be responded to by the resource which that URL addresses. The
+addressing scheme considers only the path segments of the URL. Starting with the
+root resource (the one used to construct the <tt class="docutils literal">Site</tt> ) and the first
+path segment, a child resource is looked up. As long as there are more path
+segments, this process is repeated using the result of the previous lookup and
+the next path segment. For example, to handle a request
+for <tt class="docutils literal">&quot;/foo/bar&quot;</tt> , first the root's <tt class="docutils literal">&quot;foo&quot;</tt> child is
+retrieved, then that resource's <tt class="docutils literal">&quot;bar&quot;</tt> child is retrieved, then that
+resource is used to create the response.</p>
+<p>With that out of the way, let's consider an example that can serve a few
+different resources at a few different URLs.</p>
+<p>First things first: we need to import <cite>Site &lt;twisted.web.server.Site&gt;</cite> , the factory for HTTP servers, <cite>Resource &lt;twisted.web.resource.Resource&gt;</cite> , a convenient base class
+for custom pages, <cite>reactor &lt;twisted.internet.reactor&gt;</cite> ,
+the object which implements the Twisted main loop, and <cite>endpoints &lt;twisted.internet.endpoints&gt;</cite>, which contains classes for creating listening sockets. We'll also import <cite>File &lt;twisted.web.static.File&gt;</cite> to use as the resource at one
+of the example URLs.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">Site</span>
+<span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+<span class="kn">from</span> <span class="nn">twisted.web.static</span> <span class="kn">import</span> <span class="n">File</span>
+</pre></div>
+<p>Now we create a resource which will correspond to the root of the URL
+hierarchy: all URLs are children of this resource.</p>
+<div class="highlight"><pre><span></span><span class="n">root</span> <span class="o">=</span> <span class="n">Resource</span><span class="p">()</span>
+</pre></div>
+<p>Here comes the interesting part of this example. We're now going to
+create three more resources and attach them to the three
+URLs <tt class="docutils literal">/foo</tt> , <tt class="docutils literal">/bar</tt> , and <tt class="docutils literal">/baz</tt> :</p>
+<div class="highlight"><pre><span></span><span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">File</span><span class="p">(</span><span class="s2">&quot;/tmp&quot;</span><span class="p">))</span>
+<span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">File</span><span class="p">(</span><span class="s2">&quot;/lost+found&quot;</span><span class="p">))</span>
+<span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;baz&quot;</span><span class="p">,</span> <span class="n">File</span><span class="p">(</span><span class="s2">&quot;/opt&quot;</span><span class="p">))</span>
+</pre></div>
+<p>Last, all that's required is to create a <tt class="docutils literal">Site</tt> with the root
+resource, associate it with a listening server port, and start the reactor:</p>
+<div class="highlight"><pre><span></span><span class="n">factory</span> <span class="o">=</span> <span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">8880</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+<p>With this server running, <tt class="docutils literal"><span class="pre">http://localhost:8880/foo</span></tt>
+will serve a listing of files
+from <tt class="docutils literal">/tmp</tt> , <tt class="docutils literal"><span class="pre">http://localhost:8880/bar</span></tt> will
+serve a listing of files from <tt class="docutils literal">/lost+found</tt> ,
+and <tt class="docutils literal"><span class="pre">http://localhost:8880/baz</span></tt> will serve a listing of
+files from <tt class="docutils literal">/opt</tt> .</p>
+<p>Here's the whole example uninterrupted:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">Site</span>
+<span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+<span class="kn">from</span> <span class="nn">twisted.web.static</span> <span class="kn">import</span> <span class="n">File</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">Resource</span><span class="p">()</span>
+<span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">File</span><span class="p">(</span><span class="s2">&quot;/tmp&quot;</span><span class="p">))</span>
+<span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">File</span><span class="p">(</span><span class="s2">&quot;/lost+found&quot;</span><span class="p">))</span>
+<span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;baz&quot;</span><span class="p">,</span> <span class="n">File</span><span class="p">(</span><span class="s2">&quot;/opt&quot;</span><span class="p">))</span>
+
+<span class="n">factory</span> <span class="o">=</span> <span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">8880</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

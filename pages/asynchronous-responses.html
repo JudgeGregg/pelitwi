@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Asynchronous Responses</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Asynchronous Responses</h1>
+        
+        <div class="entry-content">
+        <p>In all of the previous examples, the resource examples presented generated
+responses immediately. One of the features of prime interest of Twisted Web,
+though, is the ability to generate a response over a longer period of time while
+leaving the server free to respond to other requests. In other words,
+asynchronously. In this installment, we'll write a resource like this.</p>
+<p>A resource that generates a response asynchronously looks like one that
+generates a response synchronously in many ways. The same base
+class, <cite>Resource &lt;twisted.web.resource.Resource&gt;</cite> , is used
+either way; the same render methods are used. There are three basic differences,
+though.</p>
+<p>First, instead of returning the string which will be used as the
+body of the response, the resource uses <cite>Request.write &lt;twisted.web.http.Request.write&gt;</cite> . This method can be
+called repeatedly. Each call appends another string to the response
+body. Second, when the entire response body has been passed
+to <tt class="docutils literal">Request.write</tt> , the application must
+call <cite>Request.finish &lt;twisted.web.http.Request.finish&gt;</cite> . As you might expect
+from the name, this ends the response. Finally, in order to make
+Twisted Web not end the response as soon as the render method returns,
+the render method must return <tt class="docutils literal">NOT_DONE_YET</tt> . Consider this
+example:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">NOT_DONE_YET</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+
+<span class="k">class</span> <span class="nc">DelayedResource</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_delayedRender</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;html&gt;&lt;body&gt;Sorry to keep you waiting.&lt;/body&gt;&lt;/html&gt;&quot;</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">reactor</span><span class="o">.</span><span class="n">callLater</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delayedRender</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">NOT_DONE_YET</span>
+</pre></div>
+<p>If you're not familiar with the reactor <cite>callLater &lt;twisted.internet.interfaces.IReactorTime.callLater&gt;</cite>
+method, all you really need to know about it to understand this
+example is that the above usage of it arranges to
+have <tt class="docutils literal">self._delayedRender(request)</tt> run about 5 seconds
+after <tt class="docutils literal">callLater</tt> is invoked from this render method and
+that it returns immediately.</p>
+<p>All three of the elements mentioned earlier can be seen in this
+example. The resource uses <tt class="docutils literal">Request.write</tt> to set the
+response body. It uses <tt class="docutils literal">Request.finish</tt> after the entire
+body has been specified (all with just one call to write in this
+case). Lastly, it returns <tt class="docutils literal">NOT_DONE_YET</tt> from its render
+method. So there you have it, asynchronous rendering with Twisted
+Web.</p>
+<p>Here's a complete rpy script based on this resource class (see the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/rpy-scripts-or-how-to-save-yourself-some-typing.html">previous example</a> if you need a reminder about rpy
+scripts):</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">NOT_DONE_YET</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+
+<span class="k">class</span> <span class="nc">DelayedResource</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_delayedRender</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;html&gt;&lt;body&gt;Sorry to keep you waiting.&lt;/body&gt;&lt;/html&gt;&quot;</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">reactor</span><span class="o">.</span><span class="n">callLater</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delayedRender</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">NOT_DONE_YET</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">DelayedResource</span><span class="p">()</span>
+</pre></div>
+<p>Drop this source into a <tt class="docutils literal">.rpy</tt> file and fire up a server
+using <tt class="docutils literal">twistd <span class="pre">-n</span> web <span class="pre">--path</span> /directory/containing/script/.</tt>
+You'll see that loading the page takes 5 seconds. If you try to load a
+second before the first completes, it will also take 5 seconds from
+the time you request it (but it won't be delayed by any other
+outstanding requests).</p>
+<p>Something else to consider when generating responses asynchronously is that
+the client may not wait around to get the response to its
+request. A <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/interrupted-responses.html">subsequent example</a> demonstrates how
+to detect that the client has abandoned the request and that the server
+shouldn't bother to finish generating its response.</p>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

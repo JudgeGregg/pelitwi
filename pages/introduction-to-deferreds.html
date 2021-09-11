@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Introduction to Deferreds</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Introduction to Deferreds</h1>
+        
+        <div class="entry-content">
+        <p>This document introduces <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s, Twisted's preferred mechanism for controlling the flow of asynchronous code.
+Don't worry if you don't know what that means yet -- that's why you are here!</p>
+<p>It is intended for newcomers to Twisted, and was written particularly to help people read and understand code that already uses <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s.</p>
+<p>This document assumes you have a good working knowledge of Python.
+It assumes no knowledge of Twisted.</p>
+<p>By the end of the document, you should understand what <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s are and how they can be used to coordinate asynchronous code.
+In particular, you should be able to:</p>
+<ul class="simple">
+<li>Read and understand code that uses <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s</li>
+<li>Translate from synchronous code to asynchronous code and back again</li>
+<li>Implement any sort of error-handling for asynchronous code that you wish</li>
+</ul>
+<div class="section" id="the-joy-of-order">
+<h2><a class="toc-backref" href="#id2">The joy of order</a></h2>
+<p>When you write Python code, one prevailing, deep, unassailled assumption is that a line of code within a block is only ever executed after the preceding line is finished.</p>
+<div class="highlight"><pre><span></span><span class="n">pod_bay_doors</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+<span class="n">pod</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+</pre></div>
+<p>The pod bay doors open, and only <em>then</em> does the pod launch.
+That's wonderful.
+One-line-after-another is a built-in mechanism in the language for encoding the order of execution.
+It's clear, terse, and unambiguous.</p>
+<p>Exceptions make things more complicated.
+If <tt class="docutils literal">pod_bay_doors.open()</tt> raises an exception, then we cannot know with certainty that it completed, and so it would be wrong to proceed blithely to the next line.
+Thus, Python gives us <tt class="docutils literal">try</tt>, <tt class="docutils literal">except</tt>, <tt class="docutils literal">finally</tt>, and <tt class="docutils literal">else</tt>, which together model almost every conceivable way of handling a raised exception, and tend to work really well.</p>
+<p>Function application is the other way we encode order of execution:</p>
+<pre class="literal-block">
+pprint(sorted(x.get_names()))
+</pre>
+<p>First <tt class="docutils literal">x.get_names()</tt> gets called, then <tt class="docutils literal">sorted</tt> is called with its return value, and then <tt class="docutils literal">pprint</tt> with whatever <tt class="docutils literal">sorted</tt> returns.</p>
+<p>It can also be written as:</p>
+<pre class="literal-block">
+names = x.get_names()
+sorted_names = sorted(names)
+pprint(sorted_names)
+</pre>
+<p>Sometimes it leads us to encode the order when we don't need to, as in this example:</p>
+<pre class="literal-block">
+from __future__ import print_function
+
+total = 0
+for account in accounts:
+    total += account.get_balance()
+print("Total balance ${}".format(total))
+</pre>
+<p>But that's normally not such a big deal.</p>
+<p>All in all, things are pretty good, and all of the explanation above is laboring familiar and obvious points.
+One line comes after another and one thing happens after another, and both facts are inextricably tied.</p>
+<p>But what if we had to do it differently?</p>
+</div>
+<div class="section" id="a-hypothetical-problem">
+<h2><a class="toc-backref" href="#id3">A hypothetical problem</a></h2>
+<p>What if we could no longer rely on the previous line of code being finished (whatever that means) before we started to interpret &amp; execute the next line of code?
+What if <tt class="docutils literal">pod_bay_doors.open()</tt> returned immediately, triggering something somewhere else that would eventually open the pod bay doors, recklessly sending the Python interpreter plunging into <tt class="docutils literal">pod.launch()</tt> ?</p>
+<p>That is, what would we do if the order of execution did not match the order of lines of Python?
+If "returning" no longer meant "finishing"?</p>
+<p><em>Asynchronous operations</em>?</p>
+<p>How would we prevent our pod from hurtling into the still-closed doors?
+How could we respond to a potential failure to open the doors at all?
+What if opening the doors gave us some crucial information that we needed in order to launch the pod?
+How would we get access to that information?</p>
+<p>And, crucially, since we are writing code, how can we write our code so that we can build <em>other</em> code on top of it?</p>
+</div>
+<div class="section" id="the-components-of-a-solution">
+<h2><a class="toc-backref" href="#id4">The components of a solution</a></h2>
+<p>We would still need a way of saying "do <em>this</em> only when <em>that</em> has finished".</p>
+<p>We would need a way of distinguishing between successful completion and interrupted processing, normally modeled with <tt class="docutils literal">try</tt>, <tt class="docutils literal">except</tt>, <tt class="docutils literal">else</tt>, and <tt class="docutils literal">finally</tt>.</p>
+<p>We need a mechanism for getting return failures and exception information from the thing that just executed to the thing that needs to happen next.</p>
+<p>We need somehow to be able to operate on results that we don't have yet.
+Instead of acting, we need to make and encode plans for how we would act if we could.</p>
+<p>Unless we hack the interpreter somehow, we would need to build this with the Python language constructs we are given: methods, functions, objects, and the like.</p>
+<p>Perhaps we want something that looks a little like this:</p>
+<pre class="literal-block">
+placeholder = pod_bay_doors.open()
+placeholder.when_done(pod.launch)
+</pre>
+</div>
+<div class="section" id="one-solution-deferred">
+<h2><a class="toc-backref" href="#id5">One solution: Deferred</a></h2>
+<p>Twisted tackles this problem with <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s, a type of object designed to do one thing, and one thing only: encode an order of execution separately from the order of lines in Python source code.</p>
+<p>It doesn't deal with threads, parallelism, signals, or subprocesses.
+It doesn't know anything about an event loop, greenlets, or scheduling.
+All it knows about is what order to do things in.
+How does it know that?
+Because we explicitly tell it the order that we want.</p>
+<p>Thus, instead of writing:</p>
+<pre class="literal-block">
+pod_bay_doors.open()
+pod.launch()
+</pre>
+<p>We write:</p>
+<pre class="literal-block">
+d = pod_bay_doors.open()
+d.addCallback(lambda ignored: pod.launch())
+</pre>
+<p>That introduced a dozen new concepts in a couple of lines of code, so let's break it down.
+If you think you've got it, you might want to skip to the next section.</p>
+<p>Here, <tt class="docutils literal">pod_bay_doors.open()</tt> is returning a <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>, which we assign to <tt class="docutils literal">d</tt>.
+We can think of <tt class="docutils literal">d</tt> as a placeholder, representing the value that <tt class="docutils literal">open()</tt> will eventually return when it finally gets around to finishing.</p>
+<p>To "do this next", we add a <em>callback</em> to <tt class="docutils literal">d</tt>.
+A callback is a function that will be called with whatever <tt class="docutils literal">open()</tt> eventually returns.
+In this case, we don't care, so we make a function with a single, ignored parameter that just calls <tt class="docutils literal">pod.launch()</tt>.</p>
+<p>So, we've replaced the "order of lines is order of execution" with a deliberate, in-Python encoding of the order of execution, where <tt class="docutils literal">d</tt> represents the particular flow and <tt class="docutils literal">d.addCallback</tt> replaces "new line".</p>
+<p>Of course, programs generally consist of more than two lines, and we still don't know how to deal with failure.</p>
+</div>
+<div class="section" id="getting-it-right-the-failure-cases">
+<h2><a class="toc-backref" href="#id6">Getting it right: The failure cases</a></h2>
+<p>In what follows, we are going to take each way of expressing order of operations in normal Python (using lines of code and <tt class="docutils literal">try</tt>/<tt class="docutils literal">except</tt>) and translate them into an equivalent code built with <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite> objects.</p>
+<p>This is going to be a bit painstaking, but if you want to really understand how to use <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s and maintain code that uses them, it is worth understanding each example below.</p>
+<div class="section" id="one-thing-then-another-then-another">
+<h3><a class="toc-backref" href="#id7">One thing, then another, then another</a></h3>
+<p>Recall our example from earlier:</p>
+<pre class="literal-block">
+pprint(sorted(x.get_names()))
+</pre>
+<p>Also written as:</p>
+<pre class="literal-block">
+names = x.get_names()
+sorted_names = sorted(names)
+pprint(sorted_names)
+</pre>
+<p>What if neither <tt class="docutils literal">get_names</tt> nor <tt class="docutils literal">sorted</tt> can be relied on to finish before they return?
+That is, if both are asynchronous operations?</p>
+<p>Well, in Twisted-speak they would return <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s and so we would write:</p>
+<pre class="literal-block">
+d = x.get_names()
+d.addCallback(sorted)
+d.addCallback(pprint)
+</pre>
+<p>Eventually, <tt class="docutils literal">sorted</tt> will get called with whatever <tt class="docutils literal">get_names</tt> finally delivers.
+When <tt class="docutils literal">sorted</tt> finishes, <tt class="docutils literal">pprint</tt> will be called with whatever it delivers.</p>
+<p>We could also write this as:</p>
+<pre class="literal-block">
+x.get_names().addCallback(sorted).addCallback(pprint)
+</pre>
+<p>Since <tt class="docutils literal">d.addCallback</tt> returns <tt class="docutils literal">d</tt>.</p>
+</div>
+<div class="section" id="simple-failure-handling">
+<h3><a class="toc-backref" href="#id8">Simple failure handling</a></h3>
+<p>We often want to write code equivalent to this:</p>
+<pre class="literal-block">
+try:
+    x.get_names()
+except Exception as e:
+    report_error(e)
+</pre>
+<p>How would we write this with <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s?</p>
+<div class="highlight"><pre><span></span><span class="n">d</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get_names</span><span class="p">()</span>
+<span class="n">d</span><span class="o">.</span><span class="n">addErrback</span><span class="p">(</span><span class="n">report_error</span><span class="p">)</span>
+</pre></div>
+<p><em>errback</em> is the Twisted name for a callback that is called when an error is received.</p>
+<p>This glosses over an important detail.
+Instead of getting the exception object <tt class="docutils literal">e</tt>, <tt class="docutils literal">report_error</tt> would get a <cite>Failure &lt;twisted.python.failure.Failure&gt;</cite> object, which has all of the useful information that <tt class="docutils literal">e</tt> does, but is optimized for use with <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s.</p>
+<p>We'll dig into that a bit later, after we've dealt with all of the other combinations of exceptions.</p>
+</div>
+<div class="section" id="handle-an-error-but-do-something-else-on-success">
+<h3><a class="toc-backref" href="#id9">Handle an error, but do something else on success</a></h3>
+<p>What if we want to do something after our <tt class="docutils literal">try</tt> block if it actually worked?
+Abandoning our contrived examples and reaching for generic variable names, we get:</p>
+<pre class="literal-block">
+try:
+    y = f()
+except Exception as e:
+    g(e)
+else:
+    h(y)
+</pre>
+<p>Well, we'd write it like this with <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s:</p>
+<pre class="literal-block">
+d = f()
+d.addCallbacks(h, g)
+</pre>
+<p>Where <tt class="docutils literal">addCallbacks</tt> means "add a callback and an errback at the same time".
+<tt class="docutils literal">h</tt> is the callback, <tt class="docutils literal">g</tt> is the errback.</p>
+<p>Now that we have <tt class="docutils literal">addCallbacks</tt> along with <tt class="docutils literal">addErrback</tt> and <tt class="docutils literal">addCallback</tt>, we can match any possible combination of <tt class="docutils literal">try</tt>, <tt class="docutils literal">except</tt>, <tt class="docutils literal">else</tt>, and <tt class="docutils literal">finally</tt> by varying the order in which we call them.
+Explaining exactly how it works is tricky (although the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deferred-reference.html">Deferred reference</a> does rather a good job), but once we're through all of the examples it ought to be clearer.</p>
+</div>
+<div class="section" id="handle-an-error-then-proceed-anyway">
+<h3><a class="toc-backref" href="#id10">Handle an error, then proceed anyway</a></h3>
+<p>What if we want to do something after our <tt class="docutils literal">try</tt>/<tt class="docutils literal">except</tt> block, regardless of whether or not there was an exception?
+That is, what if we wanted to do the equivalent of this generic code:</p>
+<pre class="literal-block">
+try:
+    y = f()
+except Exception as e:
+    y = g(e)
+h(y)
+</pre>
+<p>And with <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s:</p>
+<pre class="literal-block">
+d = f()
+d.addErrback(g)
+d.addCallback(h)
+</pre>
+<p>Because <tt class="docutils literal">addErrback</tt> returns <tt class="docutils literal">d</tt>, we can chain the calls like so:</p>
+<pre class="literal-block">
+f().addErrback(g).addCallback(h)
+</pre>
+<p>The order of <tt class="docutils literal">addErrback</tt> and <tt class="docutils literal">addCallback</tt> matters.
+In the next section, we can see what would happen when we swap them around.</p>
+</div>
+<div class="section" id="handle-an-error-for-the-entire-operation">
+<h3><a class="toc-backref" href="#id11">Handle an error for the entire operation</a></h3>
+<p>What if we want to wrap up a multi-step operation in one exception handler?</p>
+<div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">f</span><span class="p">()</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">h</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">g</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+<p>With <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s, it would look like this:</p>
+<pre class="literal-block">
+d = f()
+d.addCallback(h)
+d.addErrback(g)
+</pre>
+<p>Or, more succinctly:</p>
+<pre class="literal-block">
+d = f().addCallback(h).addErrback(g)
+</pre>
+</div>
+<div class="section" id="do-something-regardless">
+<h3><a class="toc-backref" href="#id12">Do something regardless</a></h3>
+<p>What about <tt class="docutils literal">finally</tt>?
+How do we do something regardless of whether or not there was an exception?
+How do we translate this:</p>
+<pre class="literal-block">
+try:
+    y = f()
+finally:
+    g()
+</pre>
+<p>Well, roughly we do this:</p>
+<pre class="literal-block">
+d = f()
+d.addBoth(g)
+</pre>
+<p>This adds <tt class="docutils literal">g</tt> as both the callback and the errback.
+It is equivalent to:</p>
+<pre class="literal-block">
+d.addCallbacks(g, g)
+</pre>
+<p>Why "roughly"?
+Because if <tt class="docutils literal">f</tt> raises, <tt class="docutils literal">g</tt> will be passed a <cite>Failure &lt;twisted.python.failure.Failure&gt;</cite> object representing the exception.
+Otherwise, <tt class="docutils literal">g</tt> will be passed the asynchronous equivalent of the return value of <tt class="docutils literal">f()</tt> (i.e. <tt class="docutils literal">y</tt>).</p>
+</div>
+<div class="section" id="coroutines-with-async-await">
+<h3><a class="toc-backref" href="#id13">Coroutines with async/await</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">versionadded: 16.4</p>
+</div>
+<p>Python 3.5 introduced <a class="reference external" href="http://www.python.org/dev/peps/pep-0492">PEP 492</a> ("Coroutines with async and await syntax") and native coroutines.
+<cite>Deferred.fromCoroutine &lt;twisted.internet.defer.Deferred.fromCoroutine&gt;</cite> allows you to write coroutines with the <tt class="docutils literal">async def</tt> syntax and <tt class="docutils literal">await</tt> on Deferreds, similar to <tt class="docutils literal">inlineCallbacks</tt>.
+Rather than decorating every function that may <tt class="docutils literal">await</tt> a Deferred (as you would with functions that <tt class="docutils literal">yield</tt> Deferreds with <tt class="docutils literal">inlineCallbacks</tt>), you only need to call <tt class="docutils literal">fromCoroutine</tt> with the outer-most coroutine object to schedule it for execution.
+Coroutines can <tt class="docutils literal">await</tt> other coroutines once running without needing to use this function themselves.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <cite>ensureDeferred &lt;twisted.internet.defer.ensureDeferred&gt;</cite> function also provides a way to convert a coroutine to a Deferred, but it's interface is more type-ambiguous; <tt class="docutils literal">Deferred.fromCoroutine</tt> is meant to replace it.</p>
+</div>
+<p>Awaiting on a Deferred which fires with a Failure will raise the exception inside your coroutine as if it were regular Python.
+If your coroutine raises an exception, it will be translated into a Failure fired on the Deferred that <tt class="docutils literal">Deferred.fromCoroutine</tt> returns for you.
+Calling <tt class="docutils literal">return</tt> will cause the Deferred that <tt class="docutils literal">Deferred.fromCoroutine</tt> returned for you to fire with a result.</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">twisted.internet.defer</span> <span class="kn">import</span> <span class="n">Deferred</span>
+<span class="kn">from</span> <span class="nn">twisted.logger</span> <span class="kn">import</span> <span class="n">Logger</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">()</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">getUsers</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">makeRequest</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"/users"</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ConnectionError</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">failure</span><span class="p">(</span><span class="s2">"makeRequest failed due to connection error"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+<span class="k">def</span> <span class="nf">do</span><span class="p">():</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">Deferred</span><span class="o">.</span><span class="n">fromCoroutine</span><span class="p">(</span><span class="n">getUsers</span><span class="p">())</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="nb">print</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span>
+</pre></div>
+<p>When writing coroutines, you do not need to use <cite>Deferred.fromCoroutine &lt;twisted.internet.defer.Deferred.fromCoroutine&gt;</cite> when you are writing a coroutine which calls other coroutines which await on Deferreds; you can just <tt class="docutils literal">await</tt> on it directly.
+For example:</p>
+<div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">foo</span><span class="p">():</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">someFunctionThatReturnsADeferred</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">bar</span><span class="p">():</span>
+    <span class="n">baz</span> <span class="o">=</span> <span class="k">await</span> <span class="n">someOtherDeferredFunction</span><span class="p">()</span>
+    <span class="n">fooResult</span> <span class="o">=</span> <span class="k">await</span> <span class="n">foo</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">baz</span> <span class="o">+</span> <span class="n">fooResult</span>
+
+<span class="k">def</span> <span class="nf">myDeferredReturningFunction</span><span class="p">():</span>
+    <span class="n">coro</span> <span class="o">=</span> <span class="n">bar</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">Deferred</span><span class="o">.</span><span class="n">fromCoroutine</span><span class="p">(</span><span class="n">coro</span><span class="p">)</span>
+</pre></div>
+<p>Even though Deferreds were used in both coroutines, only <tt class="docutils literal">bar</tt> had to be wrapped in <cite>Deferred.fromCoroutine &lt;twisted.internet.defer.Deferred.fromCoroutine&gt;</cite> to return a Deferred.</p>
+</div>
+<div class="section" id="inline-callbacks-using-yield">
+<h3><a class="toc-backref" href="#id14">Inline callbacks - using 'yield'</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Unless your code supports Python 2 (and therefore needs compatibility with older versions of Twisted), writing coroutines with the functionality described in "Coroutines with async/await" is preferred over <tt class="docutils literal">inlineCallbacks</tt>.
+Coroutines are supported by dedicated Python syntax, are compatible with <tt class="docutils literal">asyncio</tt>, and provide higher performance.</p>
+</div>
+<p>Twisted features a decorator named <tt class="docutils literal">inlineCallbacks</tt> which allows you to work with Deferreds without writing callback functions.</p>
+<p>This is done by writing your code as generators, which <em>yield</em> <tt class="docutils literal">Deferred</tt>s instead of attaching callbacks.</p>
+<p>Consider the following function written in the traditional <tt class="docutils literal">Deferred</tt> style:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">getUsers</span><span class="p">():</span>
+   <span class="n">d</span> <span class="o">=</span> <span class="n">makeRequest</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"/users"</span><span class="p">)</span>
+   <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">)</span>
+   <span class="k">return</span> <span class="n">d</span>
+</pre></div>
+<p>using <tt class="docutils literal">inlineCallbacks</tt>, we can write this as:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet.defer</span> <span class="kn">import</span> <span class="n">inlineCallbacks</span><span class="p">,</span> <span class="n">returnValue</span>
+
+<span class="nd">@inlineCallbacks</span>
+<span class="k">def</span> <span class="nf">getUsers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">responseBody</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">makeRequest</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"/users"</span><span class="p">)</span>
+    <span class="n">returnValue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">responseBody</span><span class="p">))</span>
+</pre></div>
+<p>a couple of things are happening here:</p>
+<ol class="arabic simple">
+<li>instead of calling <tt class="docutils literal">addCallback</tt> on the <tt class="docutils literal">Deferred</tt> returned by <tt class="docutils literal">makeRequest</tt>, we <em>yield</em> it.
+This causes Twisted to return the <tt class="docutils literal">Deferred</tt>'s result to us.</li>
+<li>we use <tt class="docutils literal">returnValue</tt> to propagate the final result of our function.
+Because this function is a generator, we cannot use the return statement; that would be a syntax error.</li>
+</ol>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>versionadded: 15.0</p>
+<p class="last">On Python 3, instead of writing <tt class="docutils literal">returnValue(json.loads(responseBody))</tt> you can instead write <tt class="docutils literal">return json.loads(responseBody)</tt>.
+This can be a significant readability advantage, but unfortunately if you need compatibility with Python 2, this isn't an option.</p>
+</div>
+<p>Both versions of <tt class="docutils literal">getUsers</tt> present exactly the same API to their callers: both return a <tt class="docutils literal">Deferred</tt> that fires with the parsed JSON body of the request.
+Though the <tt class="docutils literal">inlineCallbacks</tt> version looks like synchronous code, which blocks while waiting for the request to finish, each <tt class="docutils literal">yield</tt> statement allows other code to run while waiting for the <tt class="docutils literal">Deferred</tt> being yielded to fire.</p>
+<p><tt class="docutils literal">inlineCallbacks</tt> become even more powerful when dealing with complex control flow and error handling.
+For example, what if <tt class="docutils literal">makeRequest</tt> fails due to a connection error?
+For the sake of this example, let's say we want to log the exception and return an empty list.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">getUsers</span><span class="p">():</span>
+   <span class="n">d</span> <span class="o">=</span> <span class="n">makeRequest</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"/users"</span><span class="p">)</span>
+
+   <span class="k">def</span> <span class="nf">connectionError</span><span class="p">(</span><span class="n">failure</span><span class="p">):</span>
+       <span class="n">failure</span><span class="o">.</span><span class="n">trap</span><span class="p">(</span><span class="ne">ConnectionError</span><span class="p">)</span>
+       <span class="n">log</span><span class="o">.</span><span class="n">failure</span><span class="p">(</span><span class="s2">"makeRequest failed due to connection error"</span><span class="p">,</span>
+                   <span class="n">failure</span><span class="p">)</span>
+       <span class="k">return</span> <span class="p">[]</span>
+
+   <span class="n">d</span><span class="o">.</span><span class="n">addCallbacks</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">,</span> <span class="n">connectionError</span><span class="p">)</span>
+   <span class="k">return</span> <span class="n">d</span>
+</pre></div>
+<p>With <tt class="docutils literal">inlineCallbacks</tt>, we can rewrite this as:</p>
+<div class="highlight"><pre><span></span><span class="nd">@inlineCallbacks</span>
+<span class="k">def</span> <span class="nf">getUsers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">responseBody</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">makeRequest</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"/users"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ConnectionError</span><span class="p">:</span>
+       <span class="n">log</span><span class="o">.</span><span class="n">failure</span><span class="p">(</span><span class="s2">"makeRequest failed due to connection error"</span><span class="p">)</span>
+       <span class="n">returnValue</span><span class="p">([])</span>
+
+    <span class="n">returnValue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">responseBody</span><span class="p">))</span>
+</pre></div>
+<p>Our exception handling is simplified because we can use Python's familiar <tt class="docutils literal">try</tt> / <tt class="docutils literal">except</tt> syntax for handling <tt class="docutils literal">ConnectionError</tt>s.</p>
+</div>
+</div>
+<div class="section" id="conclusion">
+<h2><a class="toc-backref" href="#id15">Conclusion</a></h2>
+<p>You have been introduced to asynchronous code and have seen how to use <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>s to:</p>
+<ul class="simple">
+<li>Do something after an asynchronous operation completes successfully</li>
+<li>Use the result of a successful asynchronous operation</li>
+<li>Catch errors in asynchronous operations</li>
+<li>Do one thing if an operation succeeds, and a different thing if it fails</li>
+<li>Do something after an error has been handled successfully</li>
+<li>Wrap multiple asynchronous operations with one error handler</li>
+<li>Do something after an asynchronous operation, regardless of whether it succeeded or failed</li>
+<li>Write code without callbacks using <tt class="docutils literal">inlineCallbacks</tt></li>
+<li>Write coroutines that interact with Deferreds using <tt class="docutils literal">Deferred.fromCoroutine</tt></li>
+</ul>
+<p>These are very basic uses of <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>.
+For detailed information about how they work, how to combine multiple Deferreds, and how to write code that mixes synchronous and asynchronous APIs, see the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deferred-reference.html">Deferred reference</a>.
+Alternatively, read about how to write functions that <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/generating-deferreds.html">generate Deferreds</a>.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#the-joy-of-order" id="id2">The joy of order</a></li>
+<li><a class="reference internal" href="#a-hypothetical-problem" id="id3">A hypothetical problem</a></li>
+<li><a class="reference internal" href="#the-components-of-a-solution" id="id4">The components of a solution</a></li>
+<li><a class="reference internal" href="#one-solution-deferred" id="id5">One solution: Deferred</a></li>
+<li><a class="reference internal" href="#getting-it-right-the-failure-cases" id="id6">Getting it right: The failure cases</a><ul>
+<li><a class="reference internal" href="#one-thing-then-another-then-another" id="id7">One thing, then another, then another</a></li>
+<li><a class="reference internal" href="#simple-failure-handling" id="id8">Simple failure handling</a></li>
+<li><a class="reference internal" href="#handle-an-error-but-do-something-else-on-success" id="id9">Handle an error, but do something else on success</a></li>
+<li><a class="reference internal" href="#handle-an-error-then-proceed-anyway" id="id10">Handle an error, then proceed anyway</a></li>
+<li><a class="reference internal" href="#handle-an-error-for-the-entire-operation" id="id11">Handle an error for the entire operation</a></li>
+<li><a class="reference internal" href="#do-something-regardless" id="id12">Do something regardless</a></li>
+<li><a class="reference internal" href="#coroutines-with-async-await" id="id13">Coroutines with async/await</a></li>
+<li><a class="reference internal" href="#inline-callbacks-using-yield" id="id14">Inline callbacks - using 'yield'</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#conclusion" id="id15">Conclusion</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

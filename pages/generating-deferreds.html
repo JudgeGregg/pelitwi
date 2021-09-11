@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Generating Deferreds</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Generating Deferreds</h1>
+        
+        <div class="entry-content">
+        <!-- status of document: INCOMPLETE, DRAFT -->
+<p><cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite> objects are
+signals that a function you have called does not yet have the data you want
+available. When a function returns a Deferred object, your calling function
+attaches callbacks to it to handle the data when available.</p>
+<p>This document addresses the other half of the question: writing functions
+that return Deferreds, that is, constructing Deferred objects, arranging for
+them to be returned immediately without blocking until data is available, and
+firing their callbacks when the data is available.</p>
+<p>This document assumes that you are familiar with the asynchronous model used
+by Twisted, and with <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deferred-reference.html">using deferreds returned by functions</a>
+.</p>
+<div class="section" id="class-overview">
+<span id="core-howto-gendefer-class"></span><h2><a class="toc-backref" href="#id1">Class overview</a></h2>
+<p>This is an overview API reference for Deferred from the point of creating a
+Deferred and firing its callbacks and errbacks.  It is not meant to be a
+substitute for the docstrings in the Deferred class, but can provide
+guidelines for its use.</p>
+<p>There is a parallel overview of functions used by calling function which
+the Deferred is returned to at <cite>Using Deferreds &lt;core-howto-defer-class&gt;</cite> .</p>
+<div class="section" id="basic-callback-functions">
+<h3><a class="toc-backref" href="#id2">Basic Callback Functions</a></h3>
+<ul>
+<li><p class="first"><tt class="docutils literal">callback(result)</tt></p>
+<p>Run success callbacks with the given result. <em>This can only be run once.</em> Later calls to this or
+<tt class="docutils literal">errback</tt> will raise <cite>twisted.internet.defer.AlreadyCalledError</cite> .
+If further callbacks or errbacks are added after this
+point, addCallbacks will run the callbacks immediately.</p>
+</li>
+<li><p class="first"><tt class="docutils literal">errback(failure)</tt></p>
+<p>Run error callbacks with the given failure. <em>This can only be run once.</em> Later calls to this or
+<tt class="docutils literal">callback</tt> will raise <cite>twisted.internet.defer.AlreadyCalledError</cite> .
+If further callbacks or errbacks are added after this
+point, addCallbacks will run the callbacks immediately.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="what-deferreds-don-t-do-make-your-code-asynchronous">
+<h2><a class="toc-backref" href="#id3">What Deferreds don't do: make your code asynchronous</a></h2>
+<p><em>Deferreds do not make the code magically not block.</em></p>
+<p>Let's take this function as an example:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">defer</span>
+
+<span class="n">TARGET</span> <span class="o">=</span> <span class="mi">10000</span>
+
+<span class="k">def</span> <span class="nf">largeFibonnaciNumber</span><span class="p">():</span>
+    <span class="c1"># create a Deferred object to return:</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">defer</span><span class="o">.</span><span class="n">Deferred</span><span class="p">()</span>
+
+    <span class="c1"># calculate the ten thousandth Fibonnaci number</span>
+
+    <span class="n">first</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">second</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">TARGET</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="n">first</span> <span class="o">+</span> <span class="n">second</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="n">second</span>
+        <span class="n">second</span> <span class="o">=</span> <span class="n">new</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Progress: calculating the </span><span class="si">%d</span><span class="s2">th Fibonnaci number"</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+
+    <span class="c1"># give the Deferred the answer to pass to the callbacks:</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">second</span><span class="p">)</span>
+
+    <span class="c1"># return the Deferred with the answer:</span>
+    <span class="k">return</span> <span class="n">d</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">timeBefore</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="c1"># call the function and get our Deferred</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">largeFibonnaciNumber</span><span class="p">()</span>
+
+<span class="n">timeAfter</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Total time taken for largeFibonnaciNumber call: </span><span class="si">%0.3f</span><span class="s2"> seconds"</span> <span class="o">%</span> \
+      <span class="p">(</span><span class="n">timeAfter</span> <span class="o">-</span> <span class="n">timeBefore</span><span class="p">))</span>
+
+<span class="c1"># add a callback to it to print the number</span>
+
+<span class="k">def</span> <span class="nf">printNumber</span><span class="p">(</span><span class="n">number</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"The </span><span class="si">%d</span><span class="s2">th Fibonacci number is </span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">TARGET</span><span class="p">,</span> <span class="n">number</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Adding the callback now."</span><span class="p">)</span>
+
+<span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">printNumber</span><span class="p">)</span>
+</pre></div>
+<p>You will notice that despite creating a Deferred in the  <tt class="docutils literal">largeFibonnaciNumber</tt> function, these things happened:</p>
+<ul class="simple">
+<li>the "Total time taken for largeFibonnaciNumber call" output
+shows that the function did not return immediately as asynchronous functions
+are expected to do; and</li>
+<li>rather than the callback being added before the result was available and
+called after the result is available, it isn't even added until after the
+calculation has been completed.</li>
+</ul>
+<p>The function completed its calculation before returning, blocking the
+process until it had finished, which is exactly what asynchronous functions
+are not meant to do.  Deferreds are not a non-blocking talisman: they are a
+signal for asynchronous functions to <em>use</em> to pass results onto
+callbacks, but using them does not guarantee that you have an asynchronous
+function.</p>
+</div>
+<div class="section" id="advanced-processing-chain-control">
+<h2><a class="toc-backref" href="#id4">Advanced Processing Chain Control</a></h2>
+<ul>
+<li><p class="first"><tt class="docutils literal">pause()</tt></p>
+<p>Cease calling any methods as they are added, and do not
+respond to <tt class="docutils literal">callback</tt> , until
+<tt class="docutils literal">self.unpause()</tt> is called.</p>
+</li>
+<li><p class="first"><tt class="docutils literal">unpause()</tt></p>
+<p>If <tt class="docutils literal">callback</tt> has been called on this
+Deferred already, call all the callbacks that have been
+added to this Deferred since <tt class="docutils literal">pause</tt> was
+called.</p>
+<p>Whether it was called or not, this will put this
+Deferred in a state where further calls to
+<tt class="docutils literal">addCallbacks</tt> or <tt class="docutils literal">callback</tt> will
+work as normal.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="returning-deferreds-from-synchronous-functions">
+<h2><a class="toc-backref" href="#id5">Returning Deferreds from synchronous functions</a></h2>
+<p>Sometimes you might wish to return a Deferred from a synchronous function.
+There are several reasons why, the major two are maintaining API compatibility
+with another version of your function which returns a Deferred, or allowing
+for the possibility that in the future your function might need to be
+asynchronous.</p>
+<p>In the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deferred-reference.html">Using Deferreds</a> reference, we gave the
+following example of a synchronous function:</p>
+<p><cite>synch-validation.py &lt;listings/deferred/synch-validation.py&gt;</cite></p>
+<p>While we can require that callers of our function wrap our synchronous
+result in a Deferred using <cite>maybeDeferred &lt;twisted.internet.defer.maybeDeferred&gt;</cite> , for the sake of API
+compatibility it is better to return a Deferred ourselves using  <cite>defer.succeed &lt;twisted.internet.defer.succeed&gt;</cite> :</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">defer</span>
+
+<span class="k">def</span> <span class="nf">immediateIsValidUser</span><span class="p">(</span><span class="n">user</span><span class="p">):</span>
+    <span class="sd">'''</span>
+<span class="sd">    Returns a Deferred resulting in true if user is a valid user, false</span>
+<span class="sd">    otherwise</span>
+<span class="sd">    '''</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">user</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"Alice"</span><span class="p">,</span> <span class="s2">"Angus"</span><span class="p">,</span> <span class="s2">"Agnes"</span><span class="p">]</span>
+
+    <span class="c1"># return a Deferred object already called back with the value of result</span>
+    <span class="k">return</span> <span class="n">defer</span><span class="o">.</span><span class="n">succeed</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+<p>There is an equivalent <cite>defer.fail &lt;twisted.internet.defer.fail&gt;</cite> method to return a Deferred with the
+errback chain already fired.</p>
+</div>
+<div class="section" id="integrating-blocking-code-with-twisted">
+<h2><a class="toc-backref" href="#id6">Integrating blocking code with Twisted</a></h2>
+<p>At some point, you are likely to need to call a blocking function: many
+functions in third party libraries will have long running blocking functions.
+There is no way to 'force' a function to be asynchronous: it must be written
+that way specifically. When using Twisted, your own code should be
+asynchronous, but there is no way to make third party functions asynchronous
+other than rewriting them.</p>
+<p>In this case, Twisted provides the ability to run the blocking code in a
+separate thread rather than letting it block your application. The <cite>twisted.internet.threads.deferToThread</cite> function will set up
+a thread to run your blocking function, return a Deferred and later fire that
+Deferred when the thread completes.</p>
+<p>Let's assume our <tt class="docutils literal">largeFibonnaciNumber</tt> function
+from above is in a third party library (returning the result of the
+calculation, not a Deferred) and is not easily modifiable to be finished in
+discrete blocks. This example shows it being called in a thread, unlike in the
+earlier section we'll see that the operation does not block our entire
+program:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">largeFibonnaciNumber</span><span class="p">():</span>
+    <span class="sd">"""</span>
+<span class="sd">    Represent a long running blocking function by calculating</span>
+<span class="sd">    the TARGETth Fibonnaci number</span>
+<span class="sd">    """</span>
+    <span class="n">TARGET</span> <span class="o">=</span> <span class="mi">10000</span>
+
+    <span class="n">first</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">second</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">TARGET</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="n">first</span> <span class="o">+</span> <span class="n">second</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="n">second</span>
+        <span class="n">second</span> <span class="o">=</span> <span class="n">new</span>
+
+    <span class="k">return</span> <span class="n">second</span>
+
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">threads</span><span class="p">,</span> <span class="n">reactor</span>
+
+<span class="k">def</span> <span class="nf">fibonacciCallback</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Callback which manages the largeFibonnaciNumber result by</span>
+<span class="sd">    printing it out</span>
+<span class="sd">    """</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"largeFibonnaciNumber result ="</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+    <span class="c1"># make sure the reactor stops after the callback chain finishes,</span>
+    <span class="c1"># just so that this example terminates</span>
+    <span class="n">reactor</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">run</span><span class="p">():</span>
+    <span class="sd">"""</span>
+<span class="sd">    Run a series of operations, deferring the largeFibonnaciNumber</span>
+<span class="sd">    operation to a thread and performing some other operations after</span>
+<span class="sd">    adding the callback</span>
+<span class="sd">    """</span>
+    <span class="c1"># get our Deferred which will be called with the largeFibonnaciNumber result</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">threads</span><span class="o">.</span><span class="n">deferToThread</span><span class="p">(</span><span class="n">largeFibonnaciNumber</span><span class="p">)</span>
+    <span class="c1"># add our callback to print it out</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">fibonacciCallback</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"1st line after the addition of the callback"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"2nd line after the addition of the callback"</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
+    <span class="n">run</span><span class="p">()</span>
+    <span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="section" id="possible-sources-of-error">
+<h2><a class="toc-backref" href="#id7">Possible sources of error</a></h2>
+<p>Deferreds greatly simplify the process of writing asynchronous code by
+providing a standard for registering callbacks, but there are some subtle and
+sometimes confusing rules that you need to follow if you are going to use
+them. This mostly applies to people who are writing new systems that use
+Deferreds internally, and not writers of applications that just add callbacks
+to Deferreds produced and processed by other systems. Nevertheless, it is good
+to know.</p>
+<div class="section" id="firing-deferreds-more-than-once-is-impossible">
+<h3><a class="toc-backref" href="#id8">Firing Deferreds more than once is impossible</a></h3>
+<p>Deferreds are one-shot. You can only call <tt class="docutils literal">Deferred.callback</tt> or <tt class="docutils literal">Deferred.errback</tt> once. The processing chain continues each time
+you add new callbacks to an already-called-back-to Deferred.</p>
+</div>
+<div class="section" id="synchronous-callback-execution">
+<h3><a class="toc-backref" href="#id9">Synchronous callback execution</a></h3>
+<p>If a Deferred already has a result available, <tt class="docutils literal">addCallback</tt> <strong>may</strong> call the callback synchronously: that is, immediately
+after it's been added.  In situations where callbacks modify state, it is
+might be desirable for the chain of processing to halt until all callbacks are
+added. For this, it is possible to <tt class="docutils literal">pause</tt> and <tt class="docutils literal">unpause</tt>
+a Deferred's processing chain while you are adding lots of callbacks.</p>
+<p>Be careful when you use these methods! If you <tt class="docutils literal">pause</tt> a
+Deferred, it is <em>your</em> responsibility to make sure that you unpause it.
+The function adding the callbacks must unpause a paused Deferred, it should <em>never</em> be the responsibility of the code that actually fires the
+callback chain by calling <tt class="docutils literal">callback</tt> or <tt class="docutils literal">errback</tt> as
+this would negate its usefulness!</p>
+
+</div>
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#class-overview" id="id1">Class overview</a><ul>
+<li><a class="reference internal" href="#basic-callback-functions" id="id2">Basic Callback Functions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#what-deferreds-don-t-do-make-your-code-asynchronous" id="id3">What Deferreds don't do: make your code asynchronous</a></li>
+<li><a class="reference internal" href="#advanced-processing-chain-control" id="id4">Advanced Processing Chain Control</a></li>
+<li><a class="reference internal" href="#returning-deferreds-from-synchronous-functions" id="id5">Returning Deferreds from synchronous functions</a></li>
+<li><a class="reference internal" href="#integrating-blocking-code-with-twisted" id="id6">Integrating blocking code with Twisted</a></li>
+<li><a class="reference internal" href="#possible-sources-of-error" id="id7">Possible sources of error</a><ul>
+<li><a class="reference internal" href="#firing-deferreds-more-than-once-is-impossible" id="id8">Firing Deferreds more than once is impossible</a></li>
+<li><a class="reference internal" href="#synchronous-callback-execution" id="id9">Synchronous callback execution</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

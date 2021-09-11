@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Examples (Web)</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Examples (Web)</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="twisted-web-client">
+<h2><a class="toc-backref" href="#id1">twisted.web.client</a></h2>
+<ul class="simple">
+<li><cite>httpclient.py</cite> - use <tt class="docutils literal">twisted.web.client.Agent</tt> to download a web page.</li>
+<li>(deprecated) <cite>getpage.py</cite> - use <tt class="docutils literal">twisted.web.client.getPage</tt> to download a web page.</li>
+<li>(deprecated) <cite>dlpage.py</cite> - add callbacks to <tt class="docutils literal">twisted.web.client.downloadPage</tt> to display errors that occur when downloading a web page</li>
+</ul>
+</div>
+<div class="section" id="xml-rpc">
+<h2><a class="toc-backref" href="#id2">XML-RPC</a></h2>
+<ul class="simple">
+<li><cite>xmlrpcserver.py</cite> XML-RPC server with several methods, including echoing, faulting, returning deferreds and failed deferreds</li>
+<li><cite>xmlrpcclient.py</cite> - use <tt class="docutils literal">twisted.web.xmlrpc.Proxy</tt> to call remote XML-RPC methods</li>
+<li><cite>xmlrpc-debug.py</cite> - use <tt class="docutils literal">xmlrpc.Proxy</tt>'s <tt class="docutils literal">queryFactory</tt> to debug raw XML-RPC traffic</li>
+<li><cite>advogato.py</cite> - use <tt class="docutils literal">twisted.web.xmlrpc</tt> to post a diary entry to advogato.org; requires an advogato account</li>
+</ul>
+</div>
+<div class="section" id="virtual-hosts-and-proxies">
+<h2><a class="toc-backref" href="#id3">Virtual hosts and proxies</a></h2>
+<ul class="simple">
+<li><cite>proxy.py</cite> - use <tt class="docutils literal">twisted.web.proxy.Proxy</tt> to make the simplest proxy</li>
+<li><cite>logging-proxy.py</cite> - example of subclassing the core classes of <tt class="docutils literal">twisted.web.proxy</tt> to log requests through a proxy</li>
+<li><cite>reverse-proxy.py</cite> - use <tt class="docutils literal">twisted.web.proxy.ReverseProxyResource</tt> to make any HTTP request to the proxy port get applied to a specified website</li>
+<li><cite>rootscript.py</cite> - example use of <tt class="docutils literal">twisted.web.vhost.NameVirtualHost</tt></li>
+<li><cite>web.py</cite> - an example of both using the <tt class="docutils literal">processors</tt> attribute to set how certain file types are treated and using <tt class="docutils literal">twisted.web.vhost.VHostMonsterResource</tt> to reverse proxy</li>
+</ul>
+</div>
+<div class="section" id="rpys-and-resourcetemplate">
+<h2><a class="toc-backref" href="#id4">.rpys and ResourceTemplate</a></h2>
+<ul class="simple">
+<li><cite>hello.rpy</cite> - use <tt class="docutils literal">twisted.web.static</tt> to create a static resource to serve</li>
+<li><cite>fortune.rpy</cite> - create a resource that returns the output of a process run on the server</li>
+<li><cite>report.rpy</cite> - display various properties of a resource, including path, host, and port</li>
+<li><cite>users.rpy</cite> - use <tt class="docutils literal">twisted.web.distrib</tt> to publish user directories as for a "community web site"</li>
+<li><cite>simple.rtl</cite> - example use of <tt class="docutils literal">twisted.web.resource.ResourceTemplate</tt></li>
+</ul>
+</div>
+<div class="section" id="miscellaneous">
+<h2><a class="toc-backref" href="#id5">Miscellaneous</a></h2>
+<ul class="simple">
+<li><cite>webguard.py</cite> - pairing <tt class="docutils literal">twisted.web</tt> with <tt class="docutils literal">twisted.cred</tt> to guard resources against unauthenticated users</li>
+<li><cite>silly-web.py</cite> - bare-bones distributed web setup with a master and slave using <tt class="docutils literal">twisted.web.distrib</tt> and <tt class="docutils literal">twisted.spread.pb</tt></li>
+<li><cite>soap.py</cite> - use <tt class="docutils literal">twisted.web.soap</tt> to publish SOAP methods</li>
+</ul>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#twisted-web-client" id="id1">twisted.web.client</a></li>
+<li><a class="reference internal" href="#xml-rpc" id="id2">XML-RPC</a></li>
+<li><a class="reference internal" href="#virtual-hosts-and-proxies" id="id3">Virtual hosts and proxies</a></li>
+<li><a class="reference internal" href="#rpys-and-resourcetemplate" id="id4">.rpys and ResourceTemplate</a></li>
+<li><a class="reference internal" href="#miscellaneous" id="id5">Miscellaneous</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

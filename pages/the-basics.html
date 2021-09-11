@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - The Basics</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>The Basics</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="application">
+<h2><a class="toc-backref" href="#id1">Application</a></h2>
+<p>Twisted programs usually work with <cite>twisted.application.service.Application</cite>.
+This class usually holds all persistent configuration of a running server, such as:</p>
+<ul class="simple">
+<li>ports to bind to,</li>
+<li>places where connections to must be kept or attempted,</li>
+<li>periodic actions to do,</li>
+<li>and almost everything else to do with your <cite>Application &lt;twisted.application.service.Application&gt;</cite>.</li>
+</ul>
+<p>It is the root object in a tree of services implementing <cite>twisted.application.service.IService</cite>.</p>
+<p>Other howtos describe how to write custom code for <tt class="docutils literal">Application</tt>s, but this one describes how to use already written code (which can be part of Twisted or from a third-party Twisted plugin developer).
+The Twisted distribution comes with an important tool to deal with <tt class="docutils literal">Application</tt>s: <tt class="docutils literal">twistd(1)</tt>.</p>
+<p><tt class="docutils literal">Application</tt>s are just Python objects, which can be created and manipulated in the same ways as any other object.</p>
+</div>
+<div class="section" id="twistd">
+<h2><a class="toc-backref" href="#id2">twistd</a></h2>
+<p>The Twisted Daemon is a program that knows how to run <cite>Application &lt;twisted.application.service.Application&gt;</cite>s.
+Strictly speaking, <tt class="docutils literal">twistd</tt> is not necessary.
+Fetching the application, getting the <tt class="docutils literal">IService</tt> component, calling <tt class="docutils literal">startService()</tt>, scheduling <tt class="docutils literal">stopService()</tt> when the reactor shuts down, and then calling <tt class="docutils literal">reactor.run()</tt> could be done manually.</p>
+<p>However, <tt class="docutils literal">twistd</tt> supplies many options which are highly useful for program set up:</p>
+<ul class="simple">
+<li>choosing a reactor (for more on reactors, see <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/choosing-a-reactor-and-gui-toolkit-integration.html">Choosing a Reactor</a>),</li>
+<li>logging configuration (see the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/logging-with-twistedlogger.html">logger</a> documentation for more),</li>
+<li>daemonizing (forking to the background),</li>
+<li>and <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-the-twisted-application-framework.html">more</a>.</li>
+</ul>
+<p><tt class="docutils literal">twistd</tt> supports all Applications mentioned above -- and an additional one.
+Sometimes it is convenient to write the code for building a class in straight Python.
+One big source of such Python files is the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/examples-core.html">examples</a> directory.
+When a straight Python file which defines an <tt class="docutils literal">Application</tt> object called <tt class="docutils literal">application</tt> is used, use the <tt class="docutils literal"><span class="pre">-y</span></tt> option.</p>
+<p>When <tt class="docutils literal">twistd</tt> runs, it records its process id in a <tt class="docutils literal">twistd.pid</tt> file (this can be configured via a command line switch).
+In order to shutdown the <tt class="docutils literal">twistd</tt> process, kill that pid.
+The usual way to do this would be:</p>
+<pre class="literal-block">
+kill `cat twistd.pid`
+</pre>
+<p>To prevent <tt class="docutils literal">twistd</tt> from daemonizing, you can pass it the <tt class="docutils literal"><span class="pre">--no-daemon</span></tt> option (or <tt class="docutils literal"><span class="pre">-n</span></tt>, in conjunction with other short options).</p>
+<p>As always, the gory details are in the manual page.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#application" id="id1">Application</a></li>
+<li><a class="reference internal" href="#twistd" id="id2">twistd</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

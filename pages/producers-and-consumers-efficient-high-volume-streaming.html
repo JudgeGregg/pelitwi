@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Producers and Consumers: Efficient High-Volume Streaming</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Producers and Consumers: Efficient High-Volume Streaming</h1>
+        
+        <div class="entry-content">
+        <p>The purpose of this guide is to describe the Twisted <em>producer</em> and <em>consumer</em> system.  The producer system allows applications to stream large amounts of data in a manner which is both memory and CPU efficient, and which does not introduce a source of unacceptable latency into the reactor.</p>
+<p>Readers should have at least a passing familiarity with the terminology associated with interfaces.</p>
+<div class="section" id="push-producers">
+<h2><a class="toc-backref" href="#id3">Push Producers</a></h2>
+<p>A push producer is one which will continue to generate data without external prompting until told to stop; a pull producer will generate one chunk of data at a time in response to an explicit request for more data.</p>
+<p>The push producer API is defined by the <cite>IPushProducer &lt;twisted.internet.interfaces.IPushProducer&gt;</cite> interface.  It is best to create a push producer when data generation is closedly tied to an event source.  For example, a proxy which forwards incoming bytes from one socket to another outgoing socket might be implemented using a push producer: the <cite>dataReceived &lt;twisted.internet.interfaces.IProtocol.dataReceived&gt;</cite> takes the role of an event source from which the producer generates bytes, and requires no external intervention in order to do so.</p>
+<p>There are three methods which may be invoked on a push producer at various points in its lifetime: <cite>pauseProducing &lt;twisted.internet.interfaces.IPushProducer.pauseProducing&gt;</cite> , <cite>resumeProducing &lt;twisted.internet.interfaces.IPushProducer.resumeProducing&gt;</cite> , and <cite>stopProducing &lt;twisted.internet.interfaces.IProducer.stopProducing&gt;</cite> .</p>
+<div class="section" id="pauseproducing">
+<h3><a class="toc-backref" href="#id4">pauseProducing()</a></h3>
+<p>In order to avoid the possibility of using an unbounded amount of memory to buffer produced data which cannot be processed quickly enough, it is necessary to be able to tell a push producer to stop producing data for a while.  This is done using the <tt class="docutils literal">pauseProducing</tt> method.  Implementers of a push producer should temporarily stop producing data when this method is invoked.</p>
+</div>
+<div class="section" id="resumeproducing">
+<h3><a class="toc-backref" href="#id5">resumeProducing()</a></h3>
+<p>After a push producer has been paused for some time, the excess of data which it produced will have been processed and the producer may again begin producing data.  When the time for this comes, the push producer will have <tt class="docutils literal">resumeProducing</tt> invoked on it.</p>
+</div>
+<div class="section" id="stopproducing">
+<h3><a class="toc-backref" href="#id6">stopProducing()</a></h3>
+<p>Most producers will generate some finite (albeit, perhaps, unknown in advance) amount of data and then stop, having served their intended purpose. However, it is possible that before this happens an event will occur which renders the remaining, unproduced data irrelevant.  In these cases, producing it anyway would be wasteful.  The <tt class="docutils literal">stopProducing</tt> method will be invoked on the push producer.  The implementation should stop producing data and clean up any resources owned by the producer.</p>
+</div>
+</div>
+<div class="section" id="pull-producers">
+<h2><a class="toc-backref" href="#id7">Pull Producers</a></h2>
+<p>The pull producer API is defined by the <cite>IPullProducer &lt;twisted.internet.interfaces.IPullProducer&gt;</cite> interface.  Pull producers are useful in cases where there is no clear event source involved with the generation of data.  For example, if the data is the result of some algorithmic process that is bound only by CPU time, a pull producer is appropriate.</p>
+<p>Pull producers are defined in terms of only two methods: <cite>resumeProducing &lt;twisted.internet.interfaces.IPullProducer.resumeProducing&gt;</cite> and <cite>stopProducing &lt;twisted.internet.interfaces.IProducer.stopProducing&gt;</cite> .</p>
+<div class="section" id="id1">
+<h3><a class="toc-backref" href="#id8">resumeProducing()</a></h3>
+<p>Unlike push producers, a pull producer is expected to <strong>only</strong> produce data in response to <tt class="docutils literal">resumeProducing</tt> being called.  This method will be called whenever more data is required.  How much data to produce in response to this method call depends on various factors: too little data and runtime costs will be dominated by the back-and-forth event notification associated with a buffer becoming empty and requesting more data to process; too much data and memory usage will be driven higher than it needs to be and the latency associated with creating so much data will cause overall performance in the application to suffer.  A good rule of thumb is to generate between 16 and 64 kilobytes of data at a time, but you should experiment with various values to determine what is best for your application.</p>
+</div>
+<div class="section" id="id2">
+<h3><a class="toc-backref" href="#id9">stopProducing()</a></h3>
+<p>This method has the same meaning for pull producers as it does for push producers.</p>
+</div>
+</div>
+<div class="section" id="consumers">
+<h2><a class="toc-backref" href="#id10">Consumers</a></h2>
+<p>This far, I've discussed the various external APIs of the two kinds of producers supported by Twisted.  However, I have not mentioned where the data a producer generates actually goes, nor what entity is responsible for invoking these APIs.  Both of these roles are filled by <em>consumers</em> . Consumers are defined by the one interface <cite>IConsumer &lt;twisted.internet.interfaces.IConsumer&gt;</cite> .</p>
+<p><tt class="docutils literal">IConsumer</tt> , defines three methods: <cite>registerProducer &lt;twisted.internet.interfaces.IConsumer.registerProducer&gt;</cite> , <cite>unregisterProducer &lt;twisted.internet.interfaces.IConsumer.unregisterProducer&gt;</cite> , and <cite>write &lt;twisted.internet.interfaces.IConsumer.write&gt;</cite> .</p>
+<div class="section" id="registerproducer-producer-streaming">
+<h3><a class="toc-backref" href="#id11">registerProducer(producer, streaming)</a></h3>
+<p>So that a consumer can invoke methods on a producer, the consumer needs to be told about the producer.  This is done with the <tt class="docutils literal">registerProducer</tt> method.  The first argument is either a <tt class="docutils literal">IPullProducer</tt> or <tt class="docutils literal">IPushProducer</tt> provider; the second argument indicates which of these interfaces is provided: <tt class="docutils literal">True</tt> for push producers, <tt class="docutils literal">False</tt> for pull producers.</p>
+</div>
+<div class="section" id="unregisterproducer">
+<h3><a class="toc-backref" href="#id12">unregisterProducer()</a></h3>
+<p>Eventually a consumer will not longer be interested in a producer.  This could be because the producer has finished generating all its data, or because the consumer is moving on to something else, or any number of other reasons.  In any case, this method reverses the effects of <tt class="docutils literal">registerProducer</tt> .</p>
+</div>
+<div class="section" id="write-data">
+<h3><a class="toc-backref" href="#id13">write(data)</a></h3>
+<p>As you might guess, this is the method which a producer calls when it has generated some data.  Push producers should call it as frequently as they like as long as they are not paused.  Pull producers should call it once for each time <tt class="docutils literal">resumeProducing</tt> is called on them.</p>
+</div>
+</div>
+<div class="section" id="further-reading">
+<h2><a class="toc-backref" href="#id14">Further Reading</a></h2>
+<p>An example push producer application can be found in <tt class="docutils literal">doc/examples/streaming.py</tt> .</p>
+<ul class="simple">
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/components-interfaces-and-adapters.html">Components: Interfaces and Adapters</a></li>
+<li><cite>FileSender &lt;twisted.protocols.basic.FileSender&gt;</cite> : A Simple Pull Producer</li>
+</ul>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#push-producers" id="id3">Push Producers</a><ul>
+<li><a class="reference internal" href="#pauseproducing" id="id4">pauseProducing()</a></li>
+<li><a class="reference internal" href="#resumeproducing" id="id5">resumeProducing()</a></li>
+<li><a class="reference internal" href="#stopproducing" id="id6">stopProducing()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pull-producers" id="id7">Pull Producers</a><ul>
+<li><a class="reference internal" href="#id1" id="id8">resumeProducing()</a></li>
+<li><a class="reference internal" href="#id2" id="id9">stopProducing()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#consumers" id="id10">Consumers</a><ul>
+<li><a class="reference internal" href="#registerproducer-producer-streaming" id="id11">registerProducer(producer, streaming)</a></li>
+<li><a class="reference internal" href="#unregisterproducer" id="id12">unregisterProducer()</a></li>
+<li><a class="reference internal" href="#write-data" id="id13">write(data)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#further-reading" id="id14">Further Reading</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

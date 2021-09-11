@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Twisted Release Process</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Twisted Release Process</h1>
+        
+        <div class="entry-content">
+        <p>This document describes the Twisted release process.
+Although it is still incomplete, every effort has been made to ensure that it is accurate and up-to-date.</p>
+<p>If you want to make changes to the release process, follow the normal Twisted development process (contribute release automation software that has documentation and unit tests demonstrating that it works).</p>
+<div class="section" id="outcomes">
+<h2><a class="toc-backref" href="#id4">Outcomes</a></h2>
+<p>By the end of a Twisted release we'll have:</p>
+<ul class="simple">
+<li>Wheel and sdist package published on <a class="reference external" href="https://pypi.org/project/Twisted/">PyPI Twisted project</a>.</li>
+<li>Updated documentation (API &amp; howtos) on <a class="reference external" href="https://twisted.readthedocs.io/en/latest/">Twisted Read The Docs</a></li>
+<li>Announcement email sent to Twisted main list</li>
+<li>A <a class="reference external" href="https://github.com/twisted/twisted/releases">GitHub Release</a> with the associated tag in our Git repository</li>
+</ul>
+</div>
+<div class="section" id="prerequisites">
+<h2><a class="toc-backref" href="#id5">Prerequisites</a></h2>
+<p>To release Twisted, you will need:</p>
+<ul class="simple">
+<li>Commit privileges to Twisted GitHub repository.</li>
+</ul>
+</div>
+<div class="section" id="version-numbers">
+<h2><a class="toc-backref" href="#id6">Version numbers</a></h2>
+<p>Twisted releases use a time-based numbering scheme following PEP440 convention.
+Releases versions like YY.MM.mm, where YY is the last two digits of the year of the release, MM is the month of release, and mm is the number of the bugfix release.</p>
+<p>There are 3 release types:</p>
+<ul class="simple">
+<li>Major release when YY.MM is updated.</li>
+<li>Bugfix / patch / point release when the mm number is updated</li>
+<li>Release candidates which are pre-releases as YY.MM.mmrc1</li>
+</ul>
+<p>For example:</p>
+<ul class="simple">
+<li>A release in Jan 2017 is 17.1.0</li>
+<li>A release in Nov 2017 is 17.11.0</li>
+<li>If 17.11.0 has some critical defects, then a bugfix 17.11.1</li>
+<li>The first release candidate of 17.1.0 is 17.1.0rc1, the second is 17.1.0rc2</li>
+</ul>
+<p>Every release of Twisted includes the whole project.</p>
+<p>Throughout this document, we'll refer to the version number of the release as $RELEASE. Examples of $RELEASE include 10.0.0, 10.1.0, 10.1.1 etc.</p>
+<p>We'll refer to the first two components of the release as $API, since all releases that share those numbers are mutually API compatible.
+e.g. for 10.0.0, $API is 10.0; for 10.1.0 and 10.1.1, $API is 10.1.</p>
+<p>Incremental automatically picks the correct version number for you.
+Please retrieve it after you run it.</p>
+</div>
+<div class="section" id="overview">
+<h2><a class="toc-backref" href="#id7">Overview</a></h2>
+<p>To release Twisted, we</p>
+<ol class="arabic simple">
+<li>Prepare for a release</li>
+<li>Release one or more release candidates</li>
+<li>Release the final release</li>
+</ol>
+</div>
+<div class="section" id="prepare-for-a-release">
+<h2><a class="toc-backref" href="#id8">Prepare for a release</a></h2>
+<ol class="arabic simple">
+<li>Check for any ​regressions using <a class="reference external" href="https://twistedmatrix.com/trac/report/26">Trac regression report</a></li>
+<li>Any regression should be fixed and merged trunk before making the release branch</li>
+<li>Choose a version number.</li>
+<li>File a ticket in Trac called "Release $RELEASE" and assign it to yourself.</li>
+<li>Make a branch for the release and include the ticket number in the name (4290 is Trac ticket ID):<ul>
+<li><tt class="docutils literal">git fetch origin</tt></li>
+<li><tt class="docutils literal">git checkout origin/trunk</tt></li>
+<li><tt class="docutils literal">git checkout <span class="pre">-b</span> <span class="pre">release-$RELEASE-4290</span></tt></li>
+</ul>
+</li>
+</ol>
+</div>
+<div class="section" id="how-to-do-a-release-candidate">
+<h2><a class="toc-backref" href="#id9">How to do a release candidate</a></h2>
+<div class="section" id="prepare-the-branch">
+<h3><a class="toc-backref" href="#id10">Prepare the branch</a></h3>
+<ol class="arabic simple">
+<li>In your Git repo, fetch and check out the new release branch.</li>
+<li>Run <tt class="docutils literal">python <span class="pre">-m</span> incremental.update Twisted <span class="pre">--rc</span></tt></li>
+<li>Commit the changes made by Incremental.</li>
+<li>Run <tt class="docutils literal">tox <span class="pre">-e</span> towncrier</tt>.</li>
+<li>Commit the changes made by towncrier - this automatically removes the newsfragment files.</li>
+<li>Bump copyright dates in <tt class="docutils literal">LICENSE</tt>, <tt class="docutils literal">src/twisted/copyright.py</tt>, and <tt class="docutils literal">README.rst</tt> if required</li>
+<li>Push the changes up to GitHub and create a new release PR.</li>
+<li>The GitHub PR is dedicated to the final release and the same PR is used to release the candidate and final version.</li>
+<li>Use the <a class="reference external" href="https://github.com/twisted/twisted/releases/new">GitHub Create Release UI</a> the make a new release.</li>
+<li>Create a tag using the format <cite>twisted-VERSION</cite> based on the latest commit on the release branch that was approved after the review.</li>
+<li>Use <cite>Twisted VERSION</cite> as the name of the release.</li>
+<li>Add the release NEWS to GitHub Release page.</li>
+<li>Make sure 'This is a pre-release` is checked.</li>
+<li>Github Actions will upload the dist to PyPI when a new tag is pushed to the repo.</li>
+<li>Read the Docs hooks will publish a new version of the docs.</li>
+</ol>
+</div>
+<div class="section" id="announce">
+<h3><a class="toc-backref" href="#id11">Announce</a></h3>
+<ol class="arabic simple">
+<li>Write the release announcement</li>
+<li>Announce the release candidate on<ul>
+<li>the twisted-python mailing list by sending the content of latest release NEWS</li>
+<li>on IRC in the <tt class="docutils literal"><span class="pre">#twisted-dev</span></tt> topic by sending the version number</li>
+</ul>
+</li>
+</ol>
+<p>The release candidate announcement might mention the important changes since the last release, and ask readers to test this release candidate.</p>
+<p>Here's what the $RELEASErc1 release announcement might look like:</p>
+<pre class="literal-block">
+Live from PyCon Atlanta, I'm pleased to herald the approaching
+footsteps of the $API release.
+
+Wheels for Twisted $RELEASE release candidate are now available on PyPI.
+
+Highlights include:
+
+ * Improved documentation, including "Twisted Web in 60 seconds"
+
+ * Faster Perspective Broker applications
+
+ * A new Windows installer that ships without zope.interface
+
+ * Twisted no longer supports Python 2.3
+
+ * Over one hundred closed tickets
+
+For more information, see the NEWS file.
+
+Please download the tarballs and test them as much as possible.
+
+Thanks,
+jml
+</pre>
+<p>A week is a generally good length of time to wait before doing the final release.</p>
+</div>
+</div>
+<div class="section" id="how-to-do-a-final-release">
+<h2><a class="toc-backref" href="#id12">How to do a final release</a></h2>
+<div class="section" id="id1">
+<h3><a class="toc-backref" href="#id13">Prepare the branch</a></h3>
+<ol class="arabic simple">
+<li>Have the release branch, previously used to generate a release candidate, checked out</li>
+<li>Run <tt class="docutils literal">python <span class="pre">-m</span> incremental.update Twisted <span class="pre">--newversion</span> $RELEASE</tt></li>
+<li>Manually update the release date if necessary.</li>
+<li>Commit and push.</li>
+<li>Submit the ticket for review</li>
+<li>Pause until the ticket is reviewed and accepted.</li>
+<li>Use the <a class="reference external" href="https://github.com/twisted/twisted/releases/new">GitHub Create Release UI</a> the make a new release.</li>
+<li>Create a tag using the format <cite>twisted-VERSION</cite> based on the latest commit on the release branch that was approved after the review.</li>
+<li>Use <cite>Twisted VERSION</cite> as the name of the release.</li>
+<li>Add the release NEWS to GitHub Release page.</li>
+<li>Make sure 'This is a pre-release` is not checked.</li>
+<li>Github Actions will upload the dist to PyPI when a new tag is pushed to the repo. PyPI is the only canonical source for Twisted packages.</li>
+<li>Read the Docs hooks will publish a new version of the docs.</li>
+</ol>
+</div>
+<div class="section" id="id3">
+<h3><a class="toc-backref" href="#id14">Announce</a></h3>
+<ol class="arabic simple">
+<li>Write the release announcement that should be similar to the release candidate, with the updated version and release date.</li>
+<li>Announce the release<ul>
+<li>Send a text version of the announcement to: <a class="reference external" href="mailto:twisted-python@twistedmatrix.com">twisted-python@twistedmatrix.com</a>, <a class="reference external" href="mailto:python-announce-list@python.org">python-announce-list@python.org</a>, <a class="reference external" href="mailto:python-list@python.org">python-list@python.org</a>, <a class="reference external" href="mailto:twisted-web@twistedmatrix.com">twisted-web@twistedmatrix.com</a></li>
+<li>​http://labs.twistedmatrix.com (Post a web version of the announcements, with links instead of literal URLs)</li>
+<li>Twitter, if you feel like it</li>
+<li><tt class="docutils literal">#twisted</tt> topic on IRC (you'll need ops)</li>
+</ul>
+</li>
+</ol>
+</div>
+<div class="section" id="post-release">
+<h3><a class="toc-backref" href="#id15">Post release</a></h3>
+<ol class="arabic simple">
+<li>Run <tt class="docutils literal">python <span class="pre">-m</span> incremental.update Twisted <span class="pre">--dev</span></tt> to add a <cite>dev0</cite> postfix.</li>
+<li>Commit the dev0 update change.</li>
+<li>Merge the release branch into trunk, closing the release ticket at the same time.</li>
+</ol>
+</div>
+</div>
+<div class="section" id="when-things-go-wrong">
+<h2><a class="toc-backref" href="#id16">When things go wrong</a></h2>
+<p>If you discover a showstopper bug during the release process, you have three options.</p>
+<ol class="arabic simple">
+<li>Abort the release, make a new point release (e.g. abort 10.0.0, make 10.0.1 after the bug is fixed)</li>
+<li>Abort the release, make a new release candidate (e.g. abort 10.0.0, make 10.0.0pre3 after the bug is fixed)</li>
+</ol>
+<p>Don't delete a tag that was already pushed for a release.
+Create a new tag with incremented version.</p>
+</div>
+<div class="section" id="bug-fix-releases">
+<h2><a class="toc-backref" href="#id17">Bug fix releases</a></h2>
+<p>Sometimes, bugs happen, and sometimes these are regressions in the current released version.
+This section goes over doing these "bugfix" releases.</p>
+<ol class="arabic simple">
+<li>Ensure all bugfixes are in trunk.</li>
+<li>Make a branch off the affected version.</li>
+<li>Cherry-pick the merge commits that merge the bugfixes into trunk, onto the new release branch.</li>
+<li>Go through the rest of the process for a full release from "How to do a release candidate", merging the release branch into trunk as normal as the end of the process.<ul>
+<li>Instead of just <tt class="docutils literal"><span class="pre">--rc</span></tt> when running the change-versions script, add the patch flag, making it <tt class="docutils literal"><span class="pre">--patch</span> <span class="pre">--rc</span></tt>.</li>
+<li>Instead of waiting a week, a shorter pause is acceptable for a patch release.</li>
+</ul>
+</li>
+</ol>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#outcomes" id="id4">Outcomes</a></li>
+<li><a class="reference internal" href="#prerequisites" id="id5">Prerequisites</a></li>
+<li><a class="reference internal" href="#version-numbers" id="id6">Version numbers</a></li>
+<li><a class="reference internal" href="#overview" id="id7">Overview</a></li>
+<li><a class="reference internal" href="#prepare-for-a-release" id="id8">Prepare for a release</a></li>
+<li><a class="reference internal" href="#how-to-do-a-release-candidate" id="id9">How to do a release candidate</a><ul>
+<li><a class="reference internal" href="#prepare-the-branch" id="id10">Prepare the branch</a></li>
+<li><a class="reference internal" href="#announce" id="id11">Announce</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-do-a-final-release" id="id12">How to do a final release</a><ul>
+<li><a class="reference internal" href="#id1" id="id13">Prepare the branch</a></li>
+<li><a class="reference internal" href="#id3" id="id14">Announce</a></li>
+<li><a class="reference internal" href="#post-release" id="id15">Post release</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#when-things-go-wrong" id="id16">When things go wrong</a></li>
+<li><a class="reference internal" href="#bug-fix-releases" id="id17">Bug fix releases</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

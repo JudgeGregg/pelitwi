@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Asynchronous Responses (via Deferred)</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Asynchronous Responses (via Deferred)</h1>
+        
+        <div class="entry-content">
+        <p>The previous example had a <cite>Resource &lt;twisted.web.resource.Resource&gt;</cite> that generates its response
+asynchronously rather than immediately upon the call to its render
+method. Though it was a useful demonstration of the <tt class="docutils literal">NOT_DONE_YET</tt>
+feature of Twisted Web, the example didn't reflect what a realistic application
+might want to do. This example introduces <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite> , the Twisted class which is used
+to provide a uniform interface to many asynchronous events, and shows you an
+example of using a <tt class="docutils literal">Deferred</tt> -returning API to generate an
+asynchronous response to a request in Twisted Web.</p>
+<p><tt class="docutils literal">Deferred</tt> is the result of two consequences of the
+asynchronous programming approach. First, asynchronous code is
+frequently (if not always) concerned with some data (in Python, an
+object) which is not yet available but which probably will be
+soon. Asynchronous code needs a way to define what will be done to the
+object once it does exist. It also needs a way to define how to handle
+errors in the creation or acquisition of that object. These two needs
+are satisfied by the <em>callbacks</em> and <em>errbacks</em> of
+a <tt class="docutils literal">Deferred</tt> . Callbacks are added to
+a <tt class="docutils literal">Deferred</tt> with <cite>Deferred.addCallback &lt;twisted.internet.defer.Deferred.addCallback&gt;</cite> ; errbacks
+are added with <cite>Deferred.addErrback &lt;twisted.internet.defer.Deferred.addErrback&gt;</cite> . When the
+object finally does exist, it is passed to <cite>Deferred.callback &lt;twisted.internet.defer.Deferred.callback&gt;</cite> which passes it
+on to the callback added with <tt class="docutils literal">addCallback</tt> . Similarly, if
+an error occurs, <cite>Deferred.errback &lt;twisted.internet.defer.Deferred.errback&gt;</cite> is called and
+the error is passed along to the errback added
+with <tt class="docutils literal">addErrback</tt> . Second, the events that make
+asynchronous code actually work often take many different,
+incompatible forms. <tt class="docutils literal">Deferred</tt> acts as the uniform
+interface which lets different parts of an asynchronous application
+interact and isolates them from implementation details they shouldn't
+be concerned with.</p>
+<p>That's almost all there is to <tt class="docutils literal">Deferred</tt> . To solidify your new
+understanding, now consider this rewritten version
+of <tt class="docutils literal">DelayedResource</tt> which uses a <tt class="docutils literal">Deferred</tt> -based delay
+API. It does exactly the same thing as the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/asynchronous-responses.html">previous example</a> . Only the implementation is different.</p>
+<p>First, the example must import that new API that was just mentioned, <cite>deferLater &lt;twisted.internet.task.deferLater&gt;</cite> :</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet.task</span> <span class="kn">import</span> <span class="n">deferLater</span>
+</pre></div>
+<p>Next, all the other imports (these are the same as last time):</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">NOT_DONE_YET</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+</pre></div>
+<p>With the imports done, here's the first part of
+the <tt class="docutils literal">DelayedResource</tt> implementation. Again, this part of
+the code is identical to the previous version:</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">DelayedResource</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_delayedRender</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;html&gt;&lt;body&gt;Sorry to keep you waiting.&lt;/body&gt;&lt;/html&gt;&quot;</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
+</pre></div>
+<p>Next we need to define the render method. Here's where things
+change a bit. Instead of using <cite>callLater &lt;twisted.internet.interfaces.IReactorTime.callLater&gt;</cite> ,
+We're going to use <cite>deferLater &lt;twisted.internet.task.deferLater&gt;</cite> this
+time. <tt class="docutils literal">deferLater</tt> accepts a reactor, delay (in seconds, as
+with <tt class="docutils literal">callLater</tt> ), and a function to call after the delay
+to produce that elusive object discussed in the description
+of <tt class="docutils literal">Deferred</tt> s. We're also going to
+use <tt class="docutils literal">_delayedRender</tt> as the callback to add to
+the <tt class="docutils literal">Deferred</tt> returned by <tt class="docutils literal">deferLater</tt> . Since
+it expects the request object as an argument, we're going to set up
+the <tt class="docutils literal">deferLater</tt> call to return a <tt class="docutils literal">Deferred</tt>
+which has the request object as its result.</p>
+<div class="highlight"><pre><span></span><span class="o">...</span>
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">deferLater</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+</pre></div>
+<p>The <tt class="docutils literal">Deferred</tt> referenced by <tt class="docutils literal">d</tt> now needs to
+have the <tt class="docutils literal">_delayedRender</tt> callback added to it. Once this
+is done, <tt class="docutils literal">_delayedRender</tt> will be called with the result
+of <tt class="docutils literal">d</tt> (which will be <tt class="docutils literal">request</tt> , of course — the
+result of <tt class="docutils literal">(lambda: <span class="pre">request)()</span></tt> ).</p>
+<div class="highlight"><pre><span></span><span class="o">...</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_delayedRender</span><span class="p">)</span>
+</pre></div>
+<p>Finally, the render method still needs to return <tt class="docutils literal">NOT_DONE_YET</tt> ,
+for exactly the same reasons as it did in the previous version of the
+example.</p>
+<div class="highlight"><pre><span></span><span class="o">...</span>
+        <span class="k">return</span> <span class="n">NOT_DONE_YET</span>
+</pre></div>
+<p>And with that, <tt class="docutils literal">DelayedResource</tt> is now implemented
+based on a <tt class="docutils literal">Deferred</tt> . The example still isn't very
+realistic, but remember that since <tt class="docutils literal">Deferred</tt> s offer a
+uniform interface to many different asynchronous event sources, this
+code now resembles a real application even more closely; you could
+easily replace <tt class="docutils literal">deferLater</tt> with
+another <tt class="docutils literal">Deferred</tt> -returning API and suddenly you might
+have a resource that does something useful.</p>
+<p>Finally, here's the complete, uninterrupted example source, as an rpy script:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet.task</span> <span class="kn">import</span> <span class="n">deferLater</span>
+<span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">NOT_DONE_YET</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+
+<span class="k">class</span> <span class="nc">DelayedResource</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_delayedRender</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;html&gt;&lt;body&gt;Sorry to keep you waiting.&lt;/body&gt;&lt;/html&gt;&quot;</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">deferLater</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_delayedRender</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">NOT_DONE_YET</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">DelayedResource</span><span class="p">()</span>
+</pre></div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

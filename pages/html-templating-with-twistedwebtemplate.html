@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - HTML Templating with twisted.web.template</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>HTML Templating with twisted.web.template</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="a-very-quick-introduction-to-templating-in-python">
+<h2><a class="toc-backref" href="#id1">A Very Quick Introduction To Templating In Python</a></h2>
+<p>HTML templating is the process of transforming a template document (one which
+describes style and structure, but does not itself include any content) into
+some HTML output which includes information about objects in your application.
+There are many, many libraries for doing this in Python: to name a few, <a class="reference external" href="https://palletsprojects.com/p/jinja/">Jinja2</a> and <a class="reference external" href="https://docs.djangoproject.com/en/dev/ref/templates/">Django templates</a>.
+You can easily use any of these libraries in your Twisted Web application, either by running them
+as <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/wsgi.html">WSGI applications</a> or by calling your
+preferred templating system's APIs to produce their output as strings, and then
+writing those strings to <cite>Request.write &lt;twisted.web.http.Request.write&gt;</cite> .</p>
+<p>Before we begin explaining how to use it, I'd like to stress that you
+don't <em>need</em> to use Twisted's templating system if you prefer some other
+way to generate HTML.  Use it if it suits your personal style or your
+application, but feel free to use other things.  Twisted includes templating for
+its own use, because the <tt class="docutils literal">twisted.web</tt> server needs to produce HTML
+in various places, and we didn't want to add another large dependency for that.
+Twisted is <em>not</em> in any way incompatible with other systems, so that has
+nothing to do with the fact that we use our own.</p>
+</div>
+<div class="section" id="twisted-web-template-why-and-how-you-might-want-to-use-it">
+<h2><a class="toc-backref" href="#id2">twisted.web.template - Why And How you Might Want to Use It</a></h2>
+<p>Twisted includes a templating system, <cite>twisted.web.template</cite> .  This can be convenient for Twisted
+applications that want to produce some basic HTML for a web interface without an
+additional dependency.</p>
+<p><tt class="docutils literal">twisted.web.template</tt> also includes
+support for <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite> s, so
+you can incrementally render the output of a page based on the results of <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite> s that your application
+has returned.  This feature is fairly unique among templating libraries.</p>
+<p>In <cite>twisted.web.template</cite> , templates are XHTML files
+which also contain a special namespace for indicating dynamic portions of the
+document. For example:</p>
+<p><cite>template-1.xml &lt;listings/template-1.xml&gt;</cite></p>
+<p>The basic unit of templating is <cite>twisted.web.template.Element</cite> . An Element is given a way of
+loading a bit of markup like the above example, and knows how to
+correlate <tt class="docutils literal">render</tt>  attributes within that markup to Python methods
+exposed with <cite>twisted.web.template.renderer</cite> :</p>
+<p><cite>element_1.py &lt;listings/element_1.py&gt;</cite></p>
+<p>In order to combine the two, we must render the element.  For this simple
+example, we can use the <cite>flattenString &lt;twisted.web.template.flattenString&gt;</cite>  API, which will convert a
+single template object - such as an <cite>Element &lt;twisted.web.template.Element&gt;</cite>  - into a <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite>  which fires with a single string,
+the HTML output of the rendering process.</p>
+<p><cite>render_1.py &lt;listings/render_1.py&gt;</cite></p>
+<p>This short program cheats a little bit; we know that there are no <cite>Deferred &lt;twisted.internet.defer.Deferred&gt;</cite> s in the template which
+require the reactor to eventually fire; therefore, we can simply add a callback
+which outputs the result.  Also, none of the <tt class="docutils literal">renderer</tt> functions
+require the <tt class="docutils literal">request</tt> object, so it's acceptable to
+pass <tt class="docutils literal">None</tt> through here.  (The 'request' object here is used only to
+relay information about the rendering process to each renderer, so you may
+always use whatever object makes sense for your application.  Note, however,
+that renderers from library code may require an <cite>IRequest &lt;twisted.web.iweb.IRequest&gt;</cite> .)</p>
+<p>If you run it yourself, you can see that it produces the following output:</p>
+<p><cite>output-1.html &lt;listings/output-1.html&gt;</cite></p>
+<p>The third parameter to a renderer method is a <cite>Tag &lt;twisted.web.template.Tag&gt;</cite>  object which represents the XML element
+with the <tt class="docutils literal">t:render</tt>  attribute in the template. Calling a <cite>Tag &lt;twisted.web.template.Tag&gt;</cite>  adds children to the element
+in the DOM, which may be strings, more <cite>Tag &lt;twisted.web.template.Tag&gt;</cite> s, or other renderables such as <cite>Element &lt;twisted.web.template.Element&gt;</cite> s.
+For example, to make the header and footer bold:</p>
+<p><cite>element_2.py &lt;listings/element_2.py&gt;</cite></p>
+<p>Rendering this in a similar way to the first example would produce:</p>
+<p><cite>output-2.html &lt;listings/output-2.html&gt;</cite></p>
+<p>In addition to adding children, call syntax can be used to set attributes on a
+tag. For example, to change the <tt class="docutils literal">id</tt>  on the <tt class="docutils literal">div</tt>  while
+adding children:</p>
+<p><cite>element_3.py &lt;listings/element_3.py&gt;</cite></p>
+<p>And this would produce the following page:</p>
+<p><cite>output-3.html &lt;listings/output-3.html&gt;</cite></p>
+<p>Calling a tag mutates it, it and returns the tag itself, so you can pass it
+forward and call it multiple times if you have multiple children or attributes
+to add to it. <cite>twisted.web.template</cite> also exposes some
+convenient objects for building more complex markup structures from within
+renderer methods in the <tt class="docutils literal">tags</tt> object.  In the examples above, we've
+only used <tt class="docutils literal">tags.p</tt> and <tt class="docutils literal">tags.b</tt> , but there should be a <tt class="docutils literal">tags.x</tt> for each <em>x</em> which is a valid HTML tag.  There may be
+some omissions, but if you find one, please feel free to file a bug.</p>
+<div class="section" id="template-attributes">
+<h3><a class="toc-backref" href="#id3">Template Attributes</a></h3>
+<p><tt class="docutils literal">t:attr</tt>  tags allow you to set HTML attributes
+(like <tt class="docutils literal">href</tt>  in an <tt class="docutils literal">&lt;a <span class="pre">href="...</span></tt> ) on an enclosing
+element.</p>
+</div>
+<div class="section" id="slots">
+<h3><a class="toc-backref" href="#id4">Slots</a></h3>
+<p><tt class="docutils literal">t:slot</tt>  tags allow you to specify "slots" which you can
+conveniently fill with multiple pieces of data straight from your Python
+program.</p>
+<p>The following example demonstrates both <tt class="docutils literal">t:attr</tt>
+and <tt class="docutils literal">t:slot</tt>  in action. Here we have a layout which displays a person's
+profile on your snazzy new Twisted-powered social networking site. We use
+the <tt class="docutils literal">t:attr</tt>  tag to drop in the "src" attribute on the profile picture,
+where the actual value of src attribute gets specified by a <tt class="docutils literal">t:slot</tt>
+tag <em>within</em>  the <tt class="docutils literal">t:attr</tt>  tag. Confused? It should make more
+sense when you see the code:</p>
+<p><cite>slots-attributes-1.xml &lt;listings/slots-attributes-1.xml&gt;</cite></p>
+<p><cite>slots_attributes_1.py &lt;listings/slots_attributes_1.py&gt;</cite></p>
+<p><cite>slots-attributes-output.html &lt;listings/slots-attributes-output.html&gt;</cite></p>
+</div>
+<div class="section" id="iteration">
+<h3><a class="toc-backref" href="#id5">Iteration</a></h3>
+<p>Often, you will have a sequence of things, and want to render each of them,
+repeating a part of the template for each one. This can be done by
+cloning <tt class="docutils literal">tag</tt> in your renderer:</p>
+<p><cite>iteration-1.xml &lt;listings/iteration-1.xml&gt;</cite></p>
+<p><cite>iteration-1.py &lt;listings/iteration-1.py&gt;</cite></p>
+<p><cite>iteration-output-1.xml &lt;listings/iteration-output-1.xml&gt;</cite></p>
+<p>This renderer works because a renderer can return anything that can be
+rendered, not just <tt class="docutils literal">tag</tt> . In this case, we define a generator, which
+returns a thing that is iterable. We also could have returned
+a <tt class="docutils literal">list</tt> . Anything that is iterable will be rendered by <cite>twisted.web.template</cite> rendering each item in it. In
+this case, each item is a copy of the tag the renderer received, each filled
+with the name of a widget.</p>
+</div>
+<div class="section" id="sub-views">
+<h3><a class="toc-backref" href="#id6">Sub-views</a></h3>
+<p>Another common pattern is to delegate the rendering logic for a small part of
+the page to a separate <tt class="docutils literal">Element</tt> .  For example, the widgets from the
+iteration example above might be more complicated to render.  You can define
+an <tt class="docutils literal">Element</tt> subclass which can render a single widget.  The renderer
+method on the container can then yield instances of this
+new <tt class="docutils literal">Element</tt> subclass.</p>
+<p><cite>subviews-1.xml &lt;listings/subviews-1.xml&gt;</cite></p>
+<p><cite>subviews-1.py &lt;listings/subviews-1.py&gt;</cite></p>
+<p><cite>subviews-output-1.xml &lt;listings/subviews-output-1.xml&gt;</cite></p>
+<p><tt class="docutils literal">TagLoader</tt> lets the portion of the overall template related to
+widgets be re-used for <tt class="docutils literal">WidgetElement</tt> , which is otherwise a
+normal <tt class="docutils literal">Element</tt> subclass not much different
+from <tt class="docutils literal">WidgetsElement</tt> .  Notice that the <em>name</em> renderer on
+the <tt class="docutils literal">span</tt> tag in this template is satisfied
+from <tt class="docutils literal">WidgetElement</tt> , not <tt class="docutils literal">WidgetsElement</tt> .</p>
+</div>
+<div class="section" id="transparent">
+<h3><a class="toc-backref" href="#id7">Transparent</a></h3>
+<p>Note how renderers, slots and attributes require you to specify a renderer on
+some outer HTML element. What if you don't want to be forced to add an element
+to your DOM just to drop some content into it? Maybe it messes with your
+layout, and you can't get it to work in IE with that extra <tt class="docutils literal">div</tt>
+tag? Perhaps you need <tt class="docutils literal">t:transparent</tt> , which allows you to drop some
+content in without any surrounding "container" tag. For example:</p>
+<p><cite>transparent-1.xml &lt;listings/transparent-1.xml&gt;</cite></p>
+<p><cite>transparent_element.py &lt;listings/transparent_element.py&gt;</cite></p>
+<p><cite>transparent-output.html &lt;listings/transparent-output.html&gt;</cite></p>
+</div>
+</div>
+<div class="section" id="quoting">
+<h2><a class="toc-backref" href="#id8">Quoting</a></h2>
+<p><cite>twisted.web.template</cite>  will quote any strings that place
+into the DOM.  This provides protection against <a class="reference external" href="https://en.wikipedia.org/wiki/Cross-site_scripting">XSS attacks</a> , in
+addition to just generally making it easy to put arbitrary strings onto a web
+page, without worrying about what they might have in them.  This can easily be
+demonstrated with an element using the same template from our earlier examples.
+Here's an element that returns some "special" characters in HTML ('&lt;', '&gt;',
+and '"', which is special in attribute values):</p>
+<p><cite>quoting_element.py &lt;listings/quoting_element.py&gt;</cite></p>
+<p>Note that they are all safely quoted in the output, and will appear in a web
+browser just as you returned them from your Python method:</p>
+<p><cite>quoting-output.html &lt;listings/quoting-output.html&gt;</cite></p>
+</div>
+<div class="section" id="deferreds">
+<h2><a class="toc-backref" href="#id9">Deferreds</a></h2>
+<p>Finally, a simple demonstration of Deferred support, the unique feature of <cite>twisted.web.template</cite> .  Simply put, any renderer may
+return a Deferred which fires with some template content instead of the template
+content itself.  As shown above, <cite>flattenString &lt;twisted.web.template.flattenString&gt;</cite>  will return a Deferred that
+fires with the full content of the string.  But if there's a lot of content, you
+might not want to wait before starting to send some of it to your HTTP client:
+for that case, you can use <cite>flatten &lt;twisted.web.template.flatten&gt;</cite> .
+It's difficult to demonstrate this directly in a browser-based application;
+unless you insert very long delays before firing your Deferreds, it just looks
+like your browser is instantly displaying everything.  Here's an example that
+just prints out some HTML template, with markers inserted for where certain
+events happen:</p>
+<p><cite>wait_for_it.py &lt;listings/wait_for_it.py&gt;</cite></p>
+<p>If you run this example, you should get the following output:</p>
+<p><cite>waited-for-it.html &lt;listings/waited-for-it.html&gt;</cite></p>
+<p>This demonstrates that part of the output (everything up to
+"<tt class="docutils literal"><span class="pre">[[[In</span> <span class="pre">progress...</span></tt> ") is written out immediately as it's rendered.
+But once it hits the Deferred, <tt class="docutils literal">WaitForIt</tt> 's rendering needs to pause
+until <tt class="docutils literal"><span class="pre">.callback(...)</span></tt>  is called on that Deferred.  You can see that
+no further output is produced until the message indicating that the Deferred is
+being fired is complete.  By returning Deferreds and using <cite>flatten &lt;twisted.web.template.flatten&gt;</cite> , you can avoid buffering large
+amounts of data.</p>
+</div>
+<div class="section" id="a-brief-note-on-formats-and-doctypes">
+<h2><a class="toc-backref" href="#id10">A Brief Note on Formats and DOCTYPEs</a></h2>
+<p>The goal of <tt class="docutils literal">twisted.web.template</tt> is to emit both valid <a class="reference external" href="https://html.spec.whatwg.org/multipage/">HTML</a> or <a class="reference external" href="https://www.whatwg.org/specs/web-apps/current-work/multipage/the-xhtml-syntax.html#the-xhtml-syntax">XHTML</a> .
+However, in order to get the maximally standards-compliant output format you
+desire, you have to know which one you want, and take a few simple steps to emit
+it correctly.  Many browsers will probably work with most output if you ignore
+this section entirely, but <a class="reference external" href="https://www.whatwg.org/specs/web-apps/current-work/multipage/syntax.html#the-doctype">the HTML specification recommends that you specify an appropriate DOCTYPE</a> .</p>
+<p>As a <tt class="docutils literal">DOCTYPE</tt> declaration in your template would describe the
+template itself, rather than its output, it won't be included in your output.
+If you wish to annotate your template output with a DOCTYPE, you will have to
+write it to the browser out of band.  One way to do this would be to simply
+do <tt class="docutils literal"><span class="pre">request.write('&lt;!DOCTYPE</span> <span class="pre">html&gt;\n')</span></tt> when you are ready to
+begin emitting your response.  The same goes for an XML <tt class="docutils literal">DOCTYPE</tt>
+declaration.</p>
+<p><tt class="docutils literal">twisted.web.template</tt> will remove the <tt class="docutils literal">xmlns</tt> attributes
+used to declare
+the <tt class="docutils literal"><span class="pre">http://twistedmatrix.com/ns/twisted.web.template/0.1</span></tt> namespace,
+but it will not modify other namespace declaration attributes.  Therefore if you
+wish to serialize in HTML format, you should not use other namespaces; if you
+wish to serialize to XML, feel free to insert any namespace declarations that
+are appropriate, and they will appear in your output.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This relaxed approach is correct in many cases.  However, in certain contexts -
+especially &lt;script&gt; and &lt;style&gt; tags - quoting rules differ in
+significant ways between HTML and XML, and between different browsers' parsers
+in HTML.  If you want to generate dynamic content inside a script or stylesheet,
+the best option is to load the resource externally so you don't have to worry
+about quoting rules.  The second best option is to strictly configure your
+content-types and DOCTYPE declarations for XML, whose quoting rules are simple
+and compatible with the approach that <tt class="docutils literal">twisted.web.template</tt>  takes.
+And, please remember: regardless of how you put it there, any user input placed
+inside a &lt;script&gt; or &lt;style&gt; tag is a potential security issue.</p>
+</div>
+</div>
+<div class="section" id="a-bit-of-history">
+<h2><a class="toc-backref" href="#id11">A Bit of History</a></h2>
+<p>Those of you who used Divmod Nevow may notice some
+similarities.  <tt class="docutils literal">twisted.web.template</tt> is in fact derived from the
+latest version of Nevow, but includes only the latest components from Nevow's
+rendering pipeline, and does not have any of the legacy compatibility layers
+that Nevow grew over time.  This should make
+using <tt class="docutils literal">twisted.web.template</tt> a similar experience for many long-time
+users of Twisted who have previously used Nevow for its twisted-friendly
+templating, but more straightforward for new users.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#a-very-quick-introduction-to-templating-in-python" id="id1">A Very Quick Introduction To Templating In Python</a></li>
+<li><a class="reference internal" href="#twisted-web-template-why-and-how-you-might-want-to-use-it" id="id2">twisted.web.template - Why And How you Might Want to Use It</a><ul>
+<li><a class="reference internal" href="#template-attributes" id="id3">Template Attributes</a></li>
+<li><a class="reference internal" href="#slots" id="id4">Slots</a></li>
+<li><a class="reference internal" href="#iteration" id="id5">Iteration</a></li>
+<li><a class="reference internal" href="#sub-views" id="id6">Sub-views</a></li>
+<li><a class="reference internal" href="#transparent" id="id7">Transparent</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#quoting" id="id8">Quoting</a></li>
+<li><a class="reference internal" href="#deferreds" id="id9">Deferreds</a></li>
+<li><a class="reference internal" href="#a-brief-note-on-formats-and-doctypes" id="id10">A Brief Note on Formats and DOCTYPEs</a></li>
+<li><a class="reference internal" href="#a-bit-of-history" id="id11">A Bit of History</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

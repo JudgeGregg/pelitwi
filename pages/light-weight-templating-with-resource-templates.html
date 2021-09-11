@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Light Weight Templating With Resource Templates</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Light Weight Templating With Resource Templates</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="overview">
+<h2><a class="toc-backref" href="#id1">Overview</a></h2>
+<p>While high-level templating systems can be used with Twisted (for
+example, <a class="reference external" href="https://launchpad.net/nevow">DivmodNevow</a> , sometimes one needs a less file-heavy system which lets one
+directly write HTML. While <cite>ResourceScript &lt;twisted.web.script.ResourceScript&gt;</cite> is
+available, it has a high coding overhead, and requires some boring string
+arithmetic. <cite>ResourceTemplate &lt;twisted.web.script.ResourceTemplate&gt;</cite> fills the
+space between Nevow and ResourceScript using Quixote's PTL (Python Templating
+Language).</p>
+<p>ResourceTemplates need Quixote
+installed. In <a class="reference external" href="http://www.debian.org">Debian</a> , that means
+installing the <tt class="docutils literal"><span class="pre">python-quixote</span></tt> package
+(<tt class="docutils literal"><span class="pre">apt-get</span> install <span class="pre">python-quixote</span></tt> ). Other operating systems
+require other ways to install Quixote, or it can be done manually.</p>
+</div>
+<div class="section" id="configuring-twisted-web">
+<h2><a class="toc-backref" href="#id2">Configuring Twisted Web</a></h2>
+<p>The easiest way to get Twisted Web to support ResourceTemplates is to
+bind them to some extension using the web tap's <tt class="docutils literal"><span class="pre">--processor</span></tt>
+flag. Here is an example:</p>
+<pre class="literal-block">
+% twistd web --path=/var/www \
+        --processor=.rtl=twisted.web.script.ResourceTemplate
+</pre>
+<p>The above command line binds the <tt class="docutils literal">rtl</tt> extension to use the
+ResourceTemplate processor. Other ways are possible, but would require
+more Python coding and are outside the scope of this HOWTO.</p>
+</div>
+<div class="section" id="using-resourcetemplate">
+<h2><a class="toc-backref" href="#id3">Using ResourceTemplate</a></h2>
+<p>ResourceTemplates are coded in an extension of Python called the"Python Templating Language" . Complete documentation of the PTL
+is available
+at <a class="reference external" href="http://quixote.python.ca/quixote.dev/doc/PTL.html">the quixote web site</a> . The web server will expect the PTL source file
+to define a variable named <tt class="docutils literal">resource</tt> .  This should be
+a <cite>twisted.web.resource.Resource</cite> ,
+whose <tt class="docutils literal">.render</tt> method be called. Usually, you would want
+to define <tt class="docutils literal">render</tt> using the keyword <tt class="docutils literal">template</tt>
+rather than <tt class="docutils literal">def</tt> .</p>
+<p>Here is a simple example for a resource template.</p>
+<p><cite>webquote.rtl &lt;listings/webquote.rtl&gt;</cite></p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name"/>
+<col class="field-body"/>
+<tbody valign="top">
+<tr class="field"><th class="field-name">language:</th><td class="field-body">py3</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#overview" id="id1">Overview</a></li>
+<li><a class="reference internal" href="#configuring-twisted-web" id="id2">Configuring Twisted Web</a></li>
+<li><a class="reference internal" href="#using-resourcetemplate" id="id3">Using ResourceTemplate</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

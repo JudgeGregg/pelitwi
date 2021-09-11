@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Twisted Pair: Tunnels And Network Taps</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Twisted Pair: Tunnels And Network Taps</h1>
+        
+        <div class="entry-content">
+        <p>On Linux, Twisted Pair supports the special <em>tun</em> and <em>tap</em> network interface types.
+This functionality allows you to interact with raw sockets (for example, to send or receive ICMP or ARP traffic).
+It also allows the creation of simulated networks.
+This document will not cover the details of these platform-provided features, but it will explain how to use the Twisted Pair APIs which interact with them.
+Before reading this document, you may want to familiarize yourself with Linux tuntap if you have not already done so
+(good online resources, are a little scarce, but you may find the <a class="reference external" href="https://www.google.com/search?q=linux+tuntap+tutorial">linux tuntap tutorial</a> google results helpful).</p>
+<div class="section" id="tuntap-ports">
+<h2><a class="toc-backref" href="#id1">Tuntap Ports</a></h2>
+<p>The <cite>twisted.pair.tuntap.TuntapPort</cite> class is the entry point into the tun/tap functionality.
+This class is initialized with an application-supplied protocol object and associates that object with a tun or tap device on the system.
+If the protocol provides <cite>twisted.pair.ethernet.IEthernetProtocol</cite> then it is associated with a tap device.
+Otherwise the protocol must provide <cite>twisted.pair.raw.IRawPacketProtocol</cite> and it will be associated with a tun device.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">zope.interface</span> <span class="kn">import</span> <span class="n">implementer</span>
+<span class="kn">from</span> <span class="nn">twisted.pair.tuntap</span> <span class="kn">import</span> <span class="n">TuntapPort</span>
+<span class="kn">from</span> <span class="nn">twisted.pair.ethernet</span> <span class="kn">import</span> <span class="n">EthernetProtocol</span>
+<span class="kn">from</span> <span class="nn">twisted.pair.rawudp</span> <span class="kn">import</span> <span class="n">RawUDPProtocol</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+
+<span class="c1"># Note that you must run this example as a user with permission to open this</span>
+<span class="c1"># device.  That means run it as root or pre-configure tap0 and assign ownership</span>
+<span class="c1"># of it to a non-root user.  The same goes for tun0 below.</span>
+
+<span class="n">tap</span> <span class="o">=</span> <span class="n">TuntapPort</span><span class="p">(</span><span class="sa">b</span><span class="s2">"tap0"</span><span class="p">,</span> <span class="n">EthernetProtocol</span><span class="p">(),</span> <span class="n">reactor</span><span class="o">=</span><span class="n">reactor</span><span class="p">)</span>
+<span class="n">tap</span><span class="o">.</span><span class="n">startListening</span><span class="p">()</span>
+
+<span class="n">tun</span> <span class="o">=</span> <span class="n">TuntapPort</span><span class="p">(</span><span class="sa">b</span><span class="s2">"tun0"</span><span class="p">,</span> <span class="n">RawUDPProtocol</span><span class="p">(),</span> <span class="n">reactor</span><span class="o">=</span><span class="n">reactor</span><span class="p">)</span>
+<span class="n">tun</span><span class="o">.</span><span class="n">startListening</span><span class="p">()</span>
+</pre></div>
+<p>In the above example two protocols are attached to the network: one to a tap device and the other to a tun device.
+The <tt class="docutils literal">EthernetProtocol</tt> used in this example is a very simple implementation of <tt class="docutils literal">IEthernetProtocol</tt> which does nothing more than dispatch to some other protocol based on the protocol found in the header of each ethernet frame it receives. <tt class="docutils literal">RawUDPProtocol</tt> is similar - it dispatches to other protocols based on the UDP port of IP datagrams it received.
+This example won't do anything since no application protocols have been added to either the <tt class="docutils literal">EthernetProtocol</tt> or <tt class="docutils literal">RawUDPProtocol</tt> instances
+(not to mention the reactor isn't being started).
+However, it should give you some idea of how tun/tap functionality fits into a Twisted application.</p>
+<p>By the behaviors of these two protocols you can see the primary difference between tap and tun devices.
+The lower level of the two, tap devices, is hooked in to the network stack at the ethernet layer.
+When a <tt class="docutils literal">TuntapPort</tt> is associated with a tap device, it delivers whole ethernet frames to its protocol.
+The higher level version, tun devices, strips off the ethernet layer before delivering data to the application.
+This means that a <tt class="docutils literal">TuntapPort</tt> associated with a tun device most commonly delivers IP datagrams to its protocol (though if your network is being used to convey non-IP datagrams then it may deliver those instead).</p>
+<p>Both <tt class="docutils literal">IEthernetProtocol</tt> and <tt class="docutils literal">IRawSocketProtocol</tt> are similar to <cite>twisted.internet.protocol.DatagramProtocol</cite> .
+Datagrams, either ethernet or otherwise, are delivered to the protocol's <tt class="docutils literal">datagramReceived</tt> method.
+Conversely the protocol is associated with a transport with a <tt class="docutils literal">write</tt> method that accepts datagrams for injection into the network.</p>
+<p>You can see an example of some of this functionality in the <cite>../examples/pairudp.py</cite> example.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#tuntap-ports" id="id1">Tuntap Ports</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

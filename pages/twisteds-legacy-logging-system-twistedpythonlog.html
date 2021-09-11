@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Twisted's Legacy Logging System: twisted.python.log</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Twisted's Legacy Logging System: <tt class="docutils literal">twisted.python.log</tt></h1>
+        
+        <div class="entry-content">
+        <div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>There is now a new logging system in Twisted (<a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/logging-with-twistedlogger.html">you can read about how to use it here</a> and <cite>its API reference here &lt;twisted.logger&gt;</cite>) which is a replacement for <cite>twisted.python.log</cite>.</p>
+<p>The old logging API, described here, remains for compatibility, and is now implemented as a client of the new logging system.</p>
+<p class="last">New code should adopt the new API.</p>
+</div>
+<div class="section" id="basic-usage">
+<h2><a class="toc-backref" href="#id1">Basic usage</a></h2>
+<p>Twisted provides a simple and flexible logging system in the <cite>twisted.python.log</cite> module.  It has three commonly used
+functions:</p>
+<p><cite>msg &lt;twisted.python.log.LogPublisher.msg&gt;</cite></p>
+<blockquote>
+<p>Logs a new message.  For example:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.python</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s1">'Hello, world.'</span><span class="p">)</span>
+</pre></div>
+</blockquote>
+<p><cite>err &lt;twisted.python.log.err&gt;</cite></p>
+<blockquote>
+<p>Writes a failure to the log, including traceback information (if any).
+You can pass it a <cite>Failure &lt;twisted.python.failure.Failure&gt;</cite> or Exception instance, or
+nothing.  If you pass something else, it will be converted to a string
+with <tt class="docutils literal">repr</tt> and logged.</p>
+<p>If you pass nothing, it will construct a Failure from the
+currently active exception, which makes it convenient to use in an <tt class="docutils literal">except</tt> clause:</p>
+<div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">0</span>
+<span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">err</span><span class="p">()</span>   <span class="c1"># will log the ZeroDivisionError</span>
+</pre></div>
+</blockquote>
+<p><cite>startLogging &lt;twisted.python.log.startLogging&gt;</cite></p>
+<blockquote>
+<p>Starts logging to a given file-like object.  For example:</p>
+<div class="highlight"><pre><span></span><span class="n">log</span><span class="o">.</span><span class="n">startLogging</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s1">'/var/log/foo.log'</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">))</span>
+</pre></div>
+<p>or:</p>
+<div class="highlight"><pre><span></span><span class="n">log</span><span class="o">.</span><span class="n">startLogging</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+</pre></div>
+<p>or:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.python.logfile</span> <span class="kn">import</span> <span class="n">DailyLogFile</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">startLogging</span><span class="p">(</span><span class="n">DailyLogFile</span><span class="o">.</span><span class="n">fromFullPath</span><span class="p">(</span><span class="s2">"/var/log/foo.log"</span><span class="p">))</span>
+</pre></div>
+<p>By default, <tt class="docutils literal">startLogging</tt> will also redirect anything written
+to <tt class="docutils literal">sys.stdout</tt> and <tt class="docutils literal">sys.stderr</tt> to the log.  You
+can disable this by passing <tt class="docutils literal">setStdout=False</tt> to
+<tt class="docutils literal">startLogging</tt> .</p>
+</blockquote>
+<p>Before <tt class="docutils literal">startLogging</tt> is called, log messages will be
+discarded and errors will be written to stderr.</p>
+<div class="section" id="logging-and-twistd">
+<h3><a class="toc-backref" href="#id2">Logging and twistd</a></h3>
+<p>If you are using <tt class="docutils literal">twistd</tt> to run your daemon, it
+will take care of calling <tt class="docutils literal">startLogging</tt> for you, and will also
+rotate log files.  See <cite>twistd and tac &lt;core-howto-application-twistd&gt;</cite>
+and the <tt class="docutils literal">twistd</tt> man page for details of using
+twistd.</p>
+</div>
+<div class="section" id="log-files">
+<h3><a class="toc-backref" href="#id3">Log files</a></h3>
+<p>The <cite>twisted.python.logfile</cite> module provides
+some standard classes suitable for use with <tt class="docutils literal">startLogging</tt> , such
+as <cite>DailyLogFile &lt;twisted.python.logfile.DailyLogFile&gt;</cite> ,
+which will rotate the log to a new file once per day.</p>
+</div>
+<div class="section" id="using-the-standard-library-logging-module">
+<h3><a class="toc-backref" href="#id4">Using the standard library logging module</a></h3>
+<p>If your application uses the
+Python <a class="reference external" href="http://docs.python.org/library/logging.html">standard    library logging module</a> or you want to use its easy configuration but
+don't want to lose twisted-produced messages, the observer
+<cite>PythonLoggingObserver &lt;twisted.python.log.PythonLoggingObserver&gt;</cite>
+should be useful to you.</p>
+<p>You just start it like any other observer:</p>
+<div class="highlight"><pre><span></span><span class="n">observer</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">PythonLoggingObserver</span><span class="p">()</span>
+<span class="n">observer</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+<p>Then <a class="reference external" href="http://docs.python.org/library/logging.html">configure the    standard library logging module</a> to behave as you want.</p>
+<p>This method allows you to customize the log level received by the
+standard library logging module using the <tt class="docutils literal">logLevel</tt> keyword:</p>
+<div class="highlight"><pre><span></span><span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s2">"This is important!"</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s2">"Don't mind"</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</pre></div>
+<p>Unless <tt class="docutils literal">logLevel</tt> is provided, logging.INFO is used for <tt class="docutils literal">log.msg</tt>
+and <tt class="docutils literal">logging.ERROR</tt> is used for <tt class="docutils literal">log.err</tt> .</p>
+<p>One special care should be made when you use special configuration of
+the standard library logging module: some handlers (e.g. SMTP, HTTP) use the network and
+so can block inside the reactor loop. <em>Nothing</em> in <tt class="docutils literal">PythonLoggingObserver</tt> is
+done to prevent that.</p>
+</div>
+</div>
+<div class="section" id="writing-log-observers">
+<h2><a class="toc-backref" href="#id5">Writing log observers</a></h2>
+<p>Log observers are the basis of the Twisted logging system.
+Whenever <tt class="docutils literal">log.msg</tt> (or <tt class="docutils literal">log.err</tt> ) is called, an
+event is emitted.  The event is passed to each observer which has been
+registered.  There can be any number of observers, and each can treat
+the event in any way desired.
+An example of
+a log observer in Twisted is the <tt class="docutils literal">emit</tt> method of <cite>FileLogObserver &lt;twisted.python.log.FileLogObserver&gt;</cite> .
+<tt class="docutils literal">FileLogObserver</tt> , used by
+<tt class="docutils literal">startLogging</tt> , writes events to a log file.  A log observer
+is just a callable that accepts a dictionary as its only argument.  You can
+then register it to receive all log events (in addition to any other
+observers):</p>
+<div class="highlight"><pre><span></span><span class="n">twisted</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">addObserver</span><span class="p">(</span><span class="n">yourCallable</span><span class="p">)</span>
+</pre></div>
+<p>The dictionary will have at least two items:</p>
+<p>message</p>
+<blockquote>
+The message (a list, usually of strings)
+for this log event, as passed to <tt class="docutils literal">log.msg</tt> or the
+message in the failure passed to <tt class="docutils literal">log.err</tt> .</blockquote>
+<p>isError</p>
+<blockquote>
+This is a boolean that will be true if this event came from a call to
+<tt class="docutils literal">log.err</tt> .  If this is set, there may be a <tt class="docutils literal">failure</tt>
+item in the dictionary as will, with a Failure object in it.</blockquote>
+<p>Other items the built in logging functionality may add include:</p>
+<p>printed</p>
+<blockquote>
+This message was captured from <tt class="docutils literal">sys.stdout</tt> , i.e. this
+message came from a <tt class="docutils literal">print</tt> statement.  If
+<tt class="docutils literal">isError</tt> is also true, it came from
+<tt class="docutils literal">sys.stderr</tt> .</blockquote>
+<p>You can pass additional items to the event dictionary by passing keyword
+arguments to <tt class="docutils literal">log.msg</tt> and <tt class="docutils literal">log.err</tt> .  The standard
+log observers will ignore dictionary items they don't use.</p>
+<p>Important notes:</p>
+<ul class="simple">
+<li>Never block in a log observer, as it may run in main Twisted thread.
+This means you can't use socket or syslog standard library logging backends.</li>
+<li>The observer needs to be thread safe if you anticipate using threads
+in your program.</li>
+</ul>
+</div>
+<div class="section" id="customizing-twistd-logging">
+<h2><a class="toc-backref" href="#id6">Customizing <tt class="docutils literal">twistd</tt>  logging</a></h2>
+<p>The behavior of the logging that <tt class="docutils literal">twistd</tt> does can be
+customized either with the <tt class="docutils literal"><span class="pre">--logger</span></tt> option or by setting the
+<tt class="docutils literal">ILogObserver</tt> component on the application object.  See the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-the-twisted-application-framework.html">Application document</a> for more information.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#basic-usage" id="id1">Basic usage</a><ul>
+<li><a class="reference internal" href="#logging-and-twistd" id="id2">Logging and twistd</a></li>
+<li><a class="reference internal" href="#log-files" id="id3">Log files</a></li>
+<li><a class="reference internal" href="#using-the-standard-library-logging-module" id="id4">Using the standard library logging module</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#writing-log-observers" id="id5">Writing log observers</a></li>
+<li><a class="reference internal" href="#customizing-twistd-logging" id="id6">Customizing <tt class="docutils literal">twistd</tt>  logging</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

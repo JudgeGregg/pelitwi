@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - The Twisted Plugin System</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>The Twisted Plugin System</h1>
+        
+        <div class="entry-content">
+        <p>The purpose of this guide is to describe the preferred way to
+write extensible Twisted applications (and consequently, also to
+describe how to extend applications written in such a way).  This
+extensibility is achieved through the definition of one or more
+APIs and a mechanism for collecting code plugins which
+implement this API to provide some additional functionality.
+At the base of this system is the <cite>twisted.plugin</cite> module.</p>
+<p>Making an application extensible using the plugin system has
+several strong advantages over other techniques:</p>
+<ul class="simple">
+<li>It allows third-party developers to easily enhance your
+software in a way that is loosely coupled: only the plugin API
+is required to remain stable.</li>
+<li>It allows new plugins to be discovered flexibly.  For
+example, plugins can be loaded and saved when a program is first
+run, or re-discovered each time the program starts up, or they
+can be polled for repeatedly at runtime (allowing the discovery
+of new plugins installed after the program has started).</li>
+</ul>
+<div class="section" id="writing-extensible-programs">
+<h2><a class="toc-backref" href="#id1">Writing Extensible Programs</a></h2>
+<p>Taking advantage of <cite>twisted.plugin</cite> is
+a two step process:</p>
+<ol class="arabic">
+<li><p class="first">Define an interface which plugins will be required to implement.
+This is done using the zope.interface package in the same way one
+would define an interface for any other purpose.</p>
+<p>A convention for defining interfaces is do so in a file named like
+<em>ProjectName/projectname/iprojectname.py</em> .  The rest of this
+document will follow that convention: consider the following
+interface definition be in <tt class="docutils literal">Matsim/matsim/imatsim.py</tt> , an
+interface definition module for a hypothetical material simulation
+package.</p>
+</li>
+<li><p class="first">At one or more places in your program, invoke <cite>twisted.plugin.getPlugins</cite> and iterate over its
+result.</p>
+</li>
+</ol>
+<p>As an example of the first step, consider the following interface
+definition for a physical modelling system.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">zope.interface</span> <span class="kn">import</span> <span class="n">Interface</span><span class="p">,</span> <span class="n">Attribute</span>
+
+<span class="k">class</span> <span class="nc">IMaterial</span><span class="p">(</span><span class="n">Interface</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    An object with specific physical properties</span>
+<span class="sd">    """</span>
+    <span class="k">def</span> <span class="nf">yieldStress</span><span class="p">(</span><span class="n">temperature</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Returns the pressure this material can support without</span>
+<span class="sd">        fracturing at the given temperature.</span>
+
+<span class="sd">        @type temperature: C{float}</span>
+<span class="sd">        @param temperature: Kelvins</span>
+
+<span class="sd">        @rtype: C{float}</span>
+<span class="sd">        @return: Pascals</span>
+<span class="sd">        """</span>
+
+    <span class="n">dielectricConstant</span> <span class="o">=</span> <span class="n">Attribute</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">        @type dielectricConstant: C</span><span class="si">{complex}</span><span class="s2"></span>
+<span class="s2">        @ivar dielectricConstant: The relative permittivity, with the</span>
+<span class="s2">        real part giving reflective surface properties and the</span>
+<span class="s2">        imaginary part giving the radio absorption coefficient.</span>
+<span class="s2">        """</span><span class="p">)</span>
+</pre></div>
+<p>In another module, we might have a function that operates on
+objects providing the <tt class="docutils literal">IMaterial</tt> interface:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">displayMaterial</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'A material with yield stress </span><span class="si">%s</span><span class="s1"> at 500 K'</span> <span class="o">%</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">yieldStress</span><span class="p">(</span><span class="mi">500</span><span class="p">),))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Also a dielectric constant of </span><span class="si">%s</span><span class="s1">.'</span> <span class="o">%</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">dielectricConstant</span><span class="p">,))</span>
+</pre></div>
+<p>The last piece of required code is that which collects
+<tt class="docutils literal">IMaterial</tt> providers and passes them to the
+<tt class="docutils literal">displayMaterial</tt> function.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.plugin</span> <span class="kn">import</span> <span class="n">getPlugins</span>
+<span class="kn">from</span> <span class="nn">matsim</span> <span class="kn">import</span> <span class="n">imatsim</span>
+
+<span class="k">def</span> <span class="nf">displayAllKnownMaterials</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">material</span> <span class="ow">in</span> <span class="n">getPlugins</span><span class="p">(</span><span class="n">imatsim</span><span class="o">.</span><span class="n">IMaterial</span><span class="p">):</span>
+        <span class="n">displayMaterial</span><span class="p">(</span><span class="n">material</span><span class="p">)</span>
+</pre></div>
+<p>Third party developers may now contribute different materials
+to be used by this modelling system by implementing one or more
+plugins for the <tt class="docutils literal">IMaterial</tt> interface.</p>
+</div>
+<div class="section" id="extending-an-existing-program">
+<h2><a class="toc-backref" href="#id2">Extending an Existing Program</a></h2>
+<p>The above code demonstrates how an extensible program might be
+written using Twisted's plugin system.  How do we write plugins
+for it, though?  Essentially, we create objects which provide the
+required interface and then make them available at a particular
+location.  Consider the following example.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">zope.interface</span> <span class="kn">import</span> <span class="n">implementer</span>
+<span class="kn">from</span> <span class="nn">twisted.plugin</span> <span class="kn">import</span> <span class="n">IPlugin</span>
+<span class="kn">from</span> <span class="nn">matsim</span> <span class="kn">import</span> <span class="n">imatsim</span>
+
+<span class="nd">@implementer</span><span class="p">(</span><span class="n">IPlugin</span><span class="p">,</span> <span class="n">imatsim</span><span class="o">.</span><span class="n">IMaterial</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">SimpleMaterial</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yieldStressFactor</span><span class="p">,</span> <span class="n">dielectricConstant</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_yieldStressFactor</span> <span class="o">=</span> <span class="n">yieldStressFactor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dielectricConstant</span> <span class="o">=</span> <span class="n">dielectricConstant</span>
+
+    <span class="k">def</span> <span class="nf">yieldStress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temperature</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_yieldStressFactor</span> <span class="o">*</span> <span class="n">temperature</span>
+
+<span class="n">steelPlate</span> <span class="o">=</span> <span class="n">SimpleMaterial</span><span class="p">(</span><span class="mf">2.06842719e11</span><span class="p">,</span> <span class="mf">2.7</span> <span class="o">+</span> <span class="mf">0.2</span><span class="n">j</span><span class="p">)</span>
+<span class="n">brassPlate</span> <span class="o">=</span> <span class="n">SimpleMaterial</span><span class="p">(</span><span class="mf">1.03421359e11</span><span class="p">,</span> <span class="mf">1.4</span> <span class="o">+</span> <span class="mf">0.5</span><span class="n">j</span><span class="p">)</span>
+</pre></div>
+<p><tt class="docutils literal">steelPlate</tt> and <tt class="docutils literal">brassPlate</tt> now provide both
+<cite>IPlugin &lt;twisted.plugin.IPlugin&gt;</cite> and <tt class="docutils literal">IMaterial</tt> .
+All that remains is to make this module available at an appropriate
+location. For this, there are two options. The first of these is
+primarily useful during development: if a directory which
+has been added to <tt class="docutils literal">sys.path</tt> (typically by adding it to the
+<tt class="docutils literal">PYTHONPATH</tt> environment variable) contains a
+<em>directory</em> named <tt class="docutils literal">twisted/plugins/</tt> ,
+each <tt class="docutils literal">.py</tt> file in that directory will be loaded
+as a source of plugins.  This directory <em>must not</em> be a Python
+package: including <tt class="docutils literal">__init__.py</tt> will cause the
+directory to be skipped and no plugins loaded from it.  Second, each
+module in the installed version of Twisted's <tt class="docutils literal">twisted.plugins</tt> package will also be loaded as a source of
+plugins.</p>
+<p>Once this plugin is installed in one of these two ways,
+<tt class="docutils literal">displayAllKnownMaterials</tt> can be run and we will see
+two pairs of output: one for a steel plate and one for a brass
+plate.</p>
+</div>
+<div class="section" id="alternate-plugin-packages">
+<h2><a class="toc-backref" href="#id3">Alternate Plugin Packages</a></h2>
+<p><cite>getPlugins &lt;twisted.plugin.getPlugins&gt;</cite> takes one
+additional argument not mentioned above.  If passed in, the 2nd argument
+should be a module or package to be used instead of
+<tt class="docutils literal">twisted.plugins</tt> as the plugin meta-package.  If you
+are writing a plugin for a Twisted interface, you should never
+need to pass this argument.  However, if you have developed an
+interface of your own, you may want to mandate that plugins for it
+are installed in your own plugins package, rather than in
+Twisted's.</p>
+<p>You may want to support <tt class="docutils literal">yourproject/plugins/</tt>
+directories for ease of development.  To do so, you should make <tt class="docutils literal">yourproject/plugins/__init__.py</tt> contain at least
+the following lines.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.plugin</span> <span class="kn">import</span> <span class="n">pluginPackagePaths</span>
+<span class="n">__path__</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">pluginPackagePaths</span><span class="p">(</span><span class="vm">__name__</span><span class="p">))</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[]</span>
+</pre></div>
+<p>The key behavior here is that interfaces are essentially paired
+with a particular plugin package.  If plugins are installed in a
+different package than the one the code which relies on the
+interface they provide, they will not be found when the
+application goes to load them.</p>
+</div>
+<div class="section" id="plugin-caching">
+<h2><a class="toc-backref" href="#id4">Plugin Caching</a></h2>
+<p>In the course of using the Twisted plugin system, you may
+notice <tt class="docutils literal">dropin.cache</tt> files appearing at
+various locations.  These files are used to cache information
+about what plugins are present in the directory which contains
+them.  At times, this cached information may become out of date.
+Twisted uses the mtimes of various files involved in the plugin
+system to determine when this cache may have become invalid.
+Twisted will try to re-write the cache each time it tries to use
+it but finds it out of date.</p>
+<p>For a site-wide install, it may not (indeed, should not) be
+possible for applications running as normal users to rewrite the
+cache file.  While these applications will still run and find
+correct plugin information, they may run more slowly than they
+would if the cache was up to date, and they may also report
+exceptions if certain plugins have been removed but which the
+cache still references.  For these reasons, when installing or
+removing software which provides Twisted plugins, the site
+administrator should be sure the cache is regenerated.
+Well-behaved package managers for such software should take this
+task upon themselves, since it is trivially automatable.  The
+canonical way to regenerate the cache is to run the following
+Python code:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.plugin</span> <span class="kn">import</span> <span class="n">IPlugin</span><span class="p">,</span> <span class="n">getPlugins</span>
+<span class="nb">list</span><span class="p">(</span><span class="n">getPlugins</span><span class="p">(</span><span class="n">IPlugin</span><span class="p">))</span>
+</pre></div>
+<p>As mentioned, it is normal for exceptions to be raised
+<strong>once</strong> here if plugins have been removed.</p>
+</div>
+<div class="section" id="further-reading">
+<h2><a class="toc-backref" href="#id5">Further Reading</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/components-interfaces-and-adapters.html">Components: Interfaces and Adapters</a></li>
+</ul>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#writing-extensible-programs" id="id1">Writing Extensible Programs</a></li>
+<li><a class="reference internal" href="#extending-an-existing-program" id="id2">Extending an Existing Program</a></li>
+<li><a class="reference internal" href="#alternate-plugin-packages" id="id3">Alternate Plugin Packages</a></li>
+<li><a class="reference internal" href="#plugin-caching" id="id4">Plugin Caching</a></li>
+<li><a class="reference internal" href="#further-reading" id="id5">Further Reading</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

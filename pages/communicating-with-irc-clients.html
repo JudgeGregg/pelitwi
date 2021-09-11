@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Communicating With IRC Clients</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Communicating With IRC Clients</h1>
+        
+        <div class="entry-content">
+        <p>Communicating with clients is the whole point of an IRC server, so you want to make sure you're doing it properly.
+Today, we'll be looking at receiving messages from a client and sending messages to the client.</p>
+<div class="section" id="representing-clients-in-twisted">
+<h2>Representing Clients in Twisted</h2>
+<p>Users in Twisted IRC are represented as subclasses of <cite>the IRC class &lt;twisted.words.protocols.irc.IRC&gt;</cite>.
+This works as the protocol for your Factory class. It will also give you IRC features (like automatically parsing incoming lines) without you having to implement them yourself. The rest of this guide assumes this setup.</p>
+</div>
+<div class="section" id="sending-messages">
+<h2>Sending Messages</h2>
+<p>Messages are sent to users using the user object's <cite>sendMessage &lt;twisted.words.protocols.irc.IRC.sendMessage&gt;</cite> method.</p>
+<div class="section" id="sending-basic-messages">
+<h3>Sending Basic Messages</h3>
+<p>The basic syntax for sending messages to users is
+as follows:</p>
+<div class="highlight"><pre><span></span><span class="n">user</span><span class="o">.</span><span class="n">sendCommand</span><span class="p">(</span><span class="s2">&quot;COMMAND&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">param1</span><span class="p">,</span> <span class="n">param2</span><span class="p">),</span> <span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+<p>The prefix keyword argument is optional, and it may be omitted to send a message without a prefix (for example, the ERROR command).
+The command is whatever command you plan to send, e.g. &quot;PRIVMSG&quot;, &quot;MODE&quot;, etc.
+All arguments following the command are the parameters you want to send for the command.
+If the last argument needs to be prefixed with a colon (because it has spaces in it, e.g. a PRIVMSG message), you must add the colon to the beginning of the parameter yourself. For example:
+.. code-block:: python</p>
+<blockquote>
+user.sendCommand(&quot;PRIVMSG&quot;, (user.nickname, &quot;:{}&quot;.format(message)), sendingUser.hostmask)</blockquote>
+</div>
+<div class="section" id="sending-messages-with-tags">
+<h3>Sending Messages with Tags</h3>
+<p>Twisted also allows sending message tags as specified in
+<a class="reference external" href="https://ircv3.net/specs/core/message-tags-3.2.html">IRCv3</a>.</p>
+<p>Let's say, for example, that your server has a feature to play back a little bit of previous channel content when someone joins a channel.
+You want a way to tell people when this message occurred.  The best way to provide this information is through the <a class="reference external" href="http://ircv3.net/specs/extensions/server-time-3.2.html">server-time specification</a>.</p>
+<p>Let's say you're storing past messages in a channel object in some structure like this:</p>
+<div class="highlight"><pre><span></span><span class="n">channel</span><span class="o">.</span><span class="n">pastMessages</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;I sent some text!&quot;</span><span class="p">,</span> <span class="s2">&quot;author!ident@host&quot;</span><span class="p">,</span> <span class="n">datetime</span> <span class="nb">object</span> <span class="n">representing</span> <span class="n">the</span> <span class="n">when</span> <span class="n">the</span> <span class="n">message</span> <span class="n">was</span> <span class="n">sent</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;I did, too!&quot;</span><span class="p">,</span> <span class="s2">&quot;someone-else!ident@host&quot;</span><span class="p">,</span> <span class="n">another</span> <span class="n">datetime</span> <span class="nb">object</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+<p>Your actual implementation may vary. I went with something simple here. The times of the messages would be generated using something like <tt class="docutils literal">datetime.utcnow()</tt> when the message was received.</p>
+<p>Tags are passed as a list of tuples. If you're sending a number of tags, you may have an existing tag dictionary. You can simply add to it (assuming <tt class="docutils literal">message</tt> is the loop variable for channel.pastMessages above):</p>
+<div class="highlight"><pre><span></span><span class="n">sendingTags</span><span class="p">[</span><span class="s2">&quot;server-time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">Z&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">message</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()[:</span><span class="o">-</span><span class="mi">3</span><span class="p">])</span>
+</pre></div>
+<p>This will generate the required time format and add it to the tag dictionary. The last three characters that we remove are the microseconds; removing the last three digits changes the precision to milliseconds.</p>
+<p>Once your tags are collected, you can send the message. The tag dictionary is passed using the <tt class="docutils literal">tags</tt> argument (in the same loop as above):</p>
+<div class="highlight"><pre><span></span><span class="n">user</span><span class="o">.</span><span class="n">sendCommand</span><span class="p">(</span><span class="s2">&quot;PRIVMSG&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">nickname</span><span class="p">,</span> <span class="n">message</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">message</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">sendingTags</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="receiving-messages">
+<h2>Receiving Messages</h2>
+<p>Twisted Words will handle receiving messages and parsing lines into tokens. The parsed messages are passed into your command through the user's <cite>handleCommand &lt;twisted.words.protocols.irc.IRC.handleCommand&gt;</cite> method.</p>
+<div class="section" id="handling-commands">
+<h3>Handling Commands</h3>
+<p>The default IRC handleCommand method calls the <tt class="docutils literal">irc_COMMAND</tt> method when it receives the command <tt class="docutils literal">COMMAND</tt>, and it calls irc_unknown if the method for the command received isn't defined.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.words.protocols</span> <span class="kn">import</span> <span class="n">irc</span>
+
+<span class="k">class</span> <span class="nc">IRCUser</span><span class="p">(</span><span class="n">irc</span><span class="o">.</span><span class="n">IRC</span><span class="p">):</span>
+    <span class="c1"># possibly other definitions here</span>
+    <span class="k">def</span> <span class="nf">irc_unknown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sendCommand</span><span class="p">(</span><span class="n">irc</span><span class="o">.</span><span class="n">ERR_UNKNOWNCOMMAND</span><span class="p">,</span> <span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="s2">&quot;:Unknown command&quot;</span><span class="p">),</span> <span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">irc_PRIVMSG</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="c1"># do some stuff to handle PRIVMSG for your server&#39;s setup</span>
+
+    <span class="c1"># lots of other command definitions</span>
+</pre></div>
+<p>If you have a server setup that doesn't allow you to do this (e.g. a modular server program), you may, of course, override the handleCommand function to route commands to your own handlers.</p>
+</div>
+<div class="section" id="receiving-messages-with-tags">
+<h3>Receiving Messages with Tags</h3>
+<p>This has not yet been implemented.
+.. contents:: Table Of Contents</p>
+</div>
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - UDP Networking</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>UDP Networking</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="overview">
+<h2><a class="toc-backref" href="#id1">Overview</a></h2>
+<p>Unlike TCP, UDP has no notion of connections.
+A UDP socket can receive datagrams from any server on the network and send datagrams to any host on the network.
+In addition, datagrams may arrive in any order, never arrive at all, or be duplicated in transit.</p>
+<p>Since there are no connections, we only use a single object, a protocol, for each UDP socket.
+We then use the reactor to connect this protocol to a UDP transport, using the <cite>twisted.internet.interfaces.IReactorUDP</cite> reactor API.</p>
+</div>
+<div class="section" id="datagramprotocol">
+<h2><a class="toc-backref" href="#id2">DatagramProtocol</a></h2>
+<p>The class where you actually implement the protocol parsing and handling will usually be descended from <cite>twisted.internet.protocol.DatagramProtocol</cite> or from one of its convenience children.
+The <tt class="docutils literal">DatagramProtocol</tt> class receives datagrams and can send them out over the network.
+Received datagrams include the address they were sent from.
+When sending datagrams the destination address must be specified.</p>
+<p>Here is a simple example:</p>
+<p><cite>basic_example.py &lt;listings/udp/basic_example.py&gt;</cite></p>
+<p>As you can see, the protocol is registered with the reactor.
+This means it may be persisted if it's added to an application, and thus it has <cite>startProtocol &lt;twisted.internet.protocol.AbstractDatagramProtocol.startProtocol&gt;</cite> and <cite>stopProtocol &lt;twisted.internet.protocol.AbstractDatagramProtocol.stopProtocol&gt;</cite> methods that will get called when the protocol is connected and disconnected from a UDP socket.</p>
+<p>The protocol's <tt class="docutils literal">transport</tt> attribute will implement the <cite>twisted.internet.interfaces.IUDPTransport</cite> interface.
+Notice that <tt class="docutils literal">addr</tt> argument to <tt class="docutils literal">self.transport.write</tt> should be a tuple with IP address and port number. First element of tuple must be ip address and not a hostname. If you only have the hostname use <tt class="docutils literal">reactor.resolve()</tt> to resolve the address (see <cite>twisted.internet.interfaces.IReactorCore.resolve</cite>).</p>
+<p>Other thing to keep in mind is that data written to transport must be bytes. Trying to write string may work ok in Python 2, but will
+fail if you are using Python 3.</p>
+<p>To confirm that socket is indeed listening you can try following command line one-liner.</p>
+<div class="highlight"><pre><span></span>&gt; <span class="nb">echo</span> <span class="s2">"Hello World!"</span> <span class="p">|</span> nc -4u -w1 localhost <span class="m">9999</span>
+</pre></div>
+<p>If everything is ok your "server" logs should print:</p>
+<div class="highlight"><pre><span></span>received b<span class="s1">'Hello World!\n'</span> from <span class="o">(</span><span class="s1">'127.0.0.1'</span>, <span class="m">32844</span><span class="o">)</span> <span class="c1"># where 32844 is some random port number</span>
+</pre></div>
+</div>
+<div class="section" id="adopting-datagram-ports">
+<h2><a class="toc-backref" href="#id3">Adopting Datagram Ports</a></h2>
+<p>By default <tt class="docutils literal">reactor.listenUDP()</tt> call will create appropriate socket for you, but it is also possible to add an existing
+<tt class="docutils literal">SOCK_DGRAM</tt> file descriptor of some socket to the reactor using the <cite>adoptDatagramPort &lt;twisted.internet.interfaces.IReactorSocket.adoptDatagramPort&gt;</cite> API.</p>
+<p>Here is a simple example:</p>
+<p><cite>adopt_datagram_port.py &lt;listings/udp/adopt_datagram_port.py&gt;</cite></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>You must ensure that the socket is non-blocking before passing its file descriptor to <cite>adoptDatagramPort &lt;twisted.internet.interfaces.IReactorSocket.adoptDatagramPort&gt;</cite>.</li>
+<li><cite>adoptDatagramPort &lt;twisted.internet.interfaces.IReactorSocket.adoptDatagramPort&gt;</cite> cannot (<a class="reference external" href="https://twistedmatrix.com/trac/ticket/5599">currently</a>) detect the family of the adopted socket so you must ensure that you pass the correct socket family argument.</li>
+<li>The reactor will not shutdown the socket.
+It is the responsibility of the process that created the socket to shutdown and clean up the socket when it is no longer needed.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="connected-udp">
+<h2><a class="toc-backref" href="#id4">Connected UDP</a></h2>
+<p>A connected UDP socket is slightly different from a standard one as it can only send and receive datagrams to/from a single address.
+However this does not in any way imply a connection as datagrams may still arrive in any order and the port on the other side may have no one listening.
+The benefit of the connected UDP socket is that it <strong>may</strong> provide notification of undelivered packages.
+This depends on many factors (almost all of which are out of the control of the application) but still presents certain benefits which occasionally make it useful.</p>
+<p>Unlike a regular UDP protocol, we do not need to specify where to send datagrams and are not told where they came from since they can only come from the address to which the socket is 'connected'.</p>
+<p><cite>connected_udp.py &lt;listings/udp/connected_udp.py&gt;</cite></p>
+<p>Note that <tt class="docutils literal">connect()</tt>, like <tt class="docutils literal">write()</tt> will only accept IP addresses, not unresolved hostnames.
+To obtain the IP of a hostname use <tt class="docutils literal">reactor.resolve()</tt>, e.g:</p>
+<p><cite>getting_ip.py &lt;listings/udp/getting_ip.py&gt;</cite></p>
+<p>Connecting to a new address after a previous connection or making a connected port unconnected are not currently supported, but likely will be in the future.</p>
+</div>
+<div class="section" id="multicast-udp">
+<h2><a class="toc-backref" href="#id5">Multicast UDP</a></h2>
+<p>Multicast allows a process to contact multiple hosts with a single packet, without knowing the specific IP address of any of the hosts.
+This is in contrast to normal, or unicast, UDP, where each datagram has a single IP as its destination.
+Multicast datagrams are sent to special multicast group addresses (in the IPv4 range 224.0.0.0 to 239.255.255.255), along with a corresponding port.
+In order to receive multicast datagrams, you must join that specific group address.
+However, any UDP socket can send to multicast addresses. Here is a simple server example:</p>
+<p><cite>MulticastServer.py &lt;listings/udp/MulticastServer.py&gt;</cite></p>
+<p>As with UDP, with multicast there is no server/client differentiation at the protocol level.
+Our server example is very simple and closely resembles a normal <cite>listenUDP &lt;twisted.internet.interfaces.IReactorUDP.listenUDP&gt;</cite> protocol implementation.
+The main difference is that instead of <tt class="docutils literal">listenUDP</tt>, <cite>listenMulticast &lt;twisted.internet.interfaces.IReactorMulticast.listenMulticast&gt;</cite> is called with the port number.
+The server calls <cite>joinGroup &lt;twisted.internet.interfaces.IMulticastTransport.joinGroup&gt;</cite> to join a multicast group.
+A <tt class="docutils literal">DatagramProtocol</tt> that is listening with multicast and has joined a group can receive multicast datagrams, but also unicast datagrams sent directly to its address.
+The server in the example above sends such a unicast message in reply to the multicast message it receives from the client.</p>
+<p>Client code may look like this:</p>
+<p><cite>MulticastClient.py &lt;listings/udp/MulticastClient.py&gt;</cite></p>
+<p>Note that a multicast socket will have a default TTL (time to live) of 1.
+That is, datagrams won't traverse more than one router hop, unless a higher TTL is set with <cite>setTTL &lt;twisted.internet.interfaces.IMulticastTransport.setTTL&gt;</cite>.
+Other functionality provided by the multicast transport includes <cite>setOutgoingInterface &lt;twisted.internet.interfaces.IMulticastTransport.setOutgoingInterface&gt;</cite> and <cite>setLoopbackMode &lt;twisted.internet.interfaces.IMulticastTransport.setLoopbackMode&gt;</cite> -- see <cite>IMulticastTransport &lt;twisted.internet.interfaces.IMulticastTransport&gt;</cite> for more information.</p>
+<p>To test your multicast setup you need to start server in one terminal and couple of clients in other terminals. If all
+goes ok you should see "Ping" messages sent by each client in logs of all other connected clients.</p>
+</div>
+<div class="section" id="broadcast-udp">
+<h2><a class="toc-backref" href="#id6">Broadcast UDP</a></h2>
+<p>Broadcast allows a different way of contacting several unknown hosts.
+Broadcasting via UDP sends a packet out to all hosts on the local network by sending to a magic broadcast address (<tt class="docutils literal">"&lt;broadcast&gt;"</tt>).
+This broadcast is filtered by routers by default, and there are no "groups" like multicast, only different ports.</p>
+<p>Broadcast is enabled by passing <tt class="docutils literal">True</tt> to <cite>setBroadcastAllowed &lt;twisted.internet.interfaces.IUDPTransport.setBroadcastAllowed&gt;</cite> on the port.
+Checking the broadcast status can be done with <cite>getBroadcastAllowed &lt;twisted.internet.interfaces.IUDPTransport.getBroadcastAllowed&gt;</cite> on the port.</p>
+<p>For a complete example of this feature, see <cite>udpbroadcast.py &lt;../examples/udpbroadcast.py&gt;</cite>.</p>
+</div>
+<div class="section" id="ipv6">
+<h2><a class="toc-backref" href="#id7">IPv6</a></h2>
+<p>UDP sockets can also bind to IPv6 addresses to support sending and receiving datagrams over IPv6.
+By passing an IPv6 address to <cite>listenUDP &lt;twisted.internet.interfaces.IReactorUDP.listenUDP&gt;</cite>'s <tt class="docutils literal">interface</tt> argument, the reactor will start an IPv6 socket that can be used to send and receive UDP datagrams.</p>
+<p><cite>ipv6_listen.py &lt;listings/udp/ipv6_listen.py&gt;</cite></p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#overview" id="id1">Overview</a></li>
+<li><a class="reference internal" href="#datagramprotocol" id="id2">DatagramProtocol</a></li>
+<li><a class="reference internal" href="#adopting-datagram-ports" id="id3">Adopting Datagram Ports</a></li>
+<li><a class="reference internal" href="#connected-udp" id="id4">Connected UDP</a></li>
+<li><a class="reference internal" href="#multicast-udp" id="id5">Multicast UDP</a></li>
+<li><a class="reference internal" href="#broadcast-udp" id="id6">Broadcast UDP</a></li>
+<li><a class="reference internal" href="#ipv6" id="id7">IPv6</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

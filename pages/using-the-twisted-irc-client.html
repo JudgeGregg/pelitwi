@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Using the Twisted IRC Client</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Using the Twisted IRC Client</h1>
+        
+        <div class="entry-content">
+        <p>A complete howto would explain how to actually use the IRC client.
+However, until that howto is written, here is a howto that explains how
+to do text formatting for IRC.</p>
+<div class="section" id="text-formatting">
+<h2><a class="toc-backref" href="#id1">Text formatting</a></h2>
+<p>The text formatting support in Twisted Words is based on the widely used
+<a class="reference external" href="http://www.mirc.com/">mIRC</a> format which supports bold,
+underline, reverse video and colored text; nesting these attributes is
+also supported.</p>
+<div class="section" id="creating-formatted-text">
+<h3><a class="toc-backref" href="#id2">Creating formatted text</a></h3>
+<p>The API used for creating formatted text in the IRC client is almost the
+same as that used by
+Twisted <cite>insults &lt;twisted.conch.insults&gt;</cite> .
+Text attributes are built up by accessing and indexing attributes on
+a special module-level attribute,
+<cite>twisted.words.protocols.irc.attributes</cite> ,
+multiple values can be passed when indexing attributes to mix text with
+nested text attributes. The resulting object can then be serialized to
+formatted text, with
+<cite>twisted.words.protocols.irc.assembleFormattedText</cite> ,
+suitable for use with any of the IRC client messaging functions.</p>
+</div>
+<div class="section" id="bold-underline-and-reverse-video-attributes">
+<h3><a class="toc-backref" href="#id3">Bold, underline and reverse video attributes</a></h3>
+<p>Bold, underline and reverse video attributes are just flags and are the
+simplest text attributes to apply. They are accessed by the names
+<tt class="docutils literal">bold</tt> , <tt class="docutils literal">underline</tt> and <tt class="docutils literal">reverseVideo</tt> ,
+respectively, on
+<cite>twisted.words.protocols.irc.attributes</cite> . For
+example, messaging someone the bold and underlined text "Hello world!":</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.words.protocols.irc</span> <span class="kn">import</span> <span class="n">assembleFormattedText</span><span class="p">,</span> <span class="n">attributes</span> <span class="k">as</span> <span class="n">A</span>
+
+<span class="c1"># Message "someone" the bold and underlined text "Hello world!"</span>
+<span class="n">anIRCClient</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s1">'someone'</span><span class="p">,</span> <span class="n">assembleFormattedText</span><span class="p">(</span>
+    <span class="n">A</span><span class="o">.</span><span class="n">bold</span><span class="p">[</span>
+        <span class="n">A</span><span class="o">.</span><span class="n">underline</span><span class="p">[</span><span class="s1">'Hello world!'</span><span class="p">]])</span>
+</pre></div>
+</div>
+<div class="section" id="the-normal-attribute">
+<h3><a class="toc-backref" href="#id4">The "normal" attribute</a></h3>
+<p>At first glance a text attribute called "normal" that does not apply any
+unusual text attributes may not seem that special but it can be quite
+useful, both as a container:</p>
+<div class="highlight"><pre><span></span><span class="n">A</span><span class="o">.</span><span class="n">normal</span><span class="p">[</span>
+    <span class="s1">'This is normal text. '</span><span class="p">,</span>
+    <span class="n">A</span><span class="o">.</span><span class="n">bold</span><span class="p">[</span><span class="s1">'This is bold text! '</span><span class="p">],</span>
+    <span class="s1">'Back to normal'</span><span class="p">,</span>
+    <span class="n">A</span><span class="o">.</span><span class="n">underline</span><span class="p">[</span><span class="s1">'This is underlined text!'</span><span class="p">]]</span>
+</pre></div>
+<p>And also as a way to temporarily disable text attributes without having to
+close and respecify all text attributes for a brief piece of text:</p>
+<div class="highlight"><pre><span></span><span class="n">A</span><span class="o">.</span><span class="n">normal</span><span class="p">[</span>
+    <span class="n">A</span><span class="o">.</span><span class="n">reverseVideo</span><span class="p">[</span><span class="s1">'This is reverse, '</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">normal</span><span class="p">[</span><span class="s1">'except for this'</span><span class="p">],</span> <span class="s1">', text'</span><span class="p">]]</span>
+</pre></div>
+<p>It is worth noting that assembled text will always begin with the control
+code to disable other attributes for the sake of correctness.</p>
+</div>
+<div class="section" id="color-attributes">
+<h3><a class="toc-backref" href="#id5">Color attributes</a></h3>
+<p>Since colors for both the foreground and background can be specified with
+IRC text formatting another level of attribute access is introduced.
+Firstly the foreground or background, through the
+<tt class="docutils literal">fg</tt> and <tt class="docutils literal">bg</tt> attribute names respectively, is
+accessed and then the color name is accessed. The available color
+attribute names are:</p>
+<ul class="simple">
+<li>white</li>
+<li>black</li>
+<li>blue</li>
+<li>green</li>
+<li>lightRed</li>
+<li>red</li>
+<li>magenta</li>
+<li>orange</li>
+<li>yellow</li>
+<li>lightGreen</li>
+<li>cyan</li>
+<li>lightCyan</li>
+<li>lightBlue</li>
+<li>lightMagenta</li>
+<li>gray</li>
+<li>lightGray</li>
+</ul>
+<p>It is possible to nest foreground and background colors to alter both
+for a single piece of text. For example to display black on green text:</p>
+<div class="highlight"><pre><span></span><span class="n">A</span><span class="o">.</span><span class="n">fg</span><span class="o">.</span><span class="n">black</span><span class="p">[</span><span class="n">A</span><span class="o">.</span><span class="n">bg</span><span class="o">.</span><span class="n">green</span><span class="p">[</span><span class="s1">'Like a terminal!'</span><span class="p">]]</span>
+</pre></div>
+</div>
+<div class="section" id="parsing-formatted-text">
+<h3><a class="toc-backref" href="#id6">Parsing formatted text</a></h3>
+<p>Most IRC clients format text so it is logical that you may want to parse
+this formatted text.
+<cite>twisted.words.protocols.irc.parseFormattedText</cite>
+will parse text into structured text attributes. It is worth noting that
+while feeding the output of <tt class="docutils literal">parseFormattedText</tt> back to
+<tt class="docutils literal">assembleFormattedText</tt> will produce the same final result,
+the actual structure of the parsed text will differ. Color codes are
+mapped from 0 to 15, codes greater than 15 will begin to wrap around.</p>
+</div>
+<div class="section" id="removing-formatting">
+<h3><a class="toc-backref" href="#id7">Removing formatting</a></h3>
+<p>In some cases, such as an automaton handling user input from IRC, it is
+desirable to have all formatting stripped from text. This can be
+accomplished with
+<cite>twisted.words.protocols.irc.stripFormatting</cite> .</p>
+
+</div>
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#text-formatting" id="id1">Text formatting</a><ul>
+<li><a class="reference internal" href="#creating-formatted-text" id="id2">Creating formatted text</a></li>
+<li><a class="reference internal" href="#bold-underline-and-reverse-video-attributes" id="id3">Bold, underline and reverse video attributes</a></li>
+<li><a class="reference internal" href="#the-normal-attribute" id="id4">The "normal" attribute</a></li>
+<li><a class="reference internal" href="#color-attributes" id="id5">Color attributes</a></li>
+<li><a class="reference internal" href="#parsing-formatted-text" id="id6">Parsing formatted text</a></li>
+<li><a class="reference internal" href="#removing-formatting" id="id7">Removing formatting</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

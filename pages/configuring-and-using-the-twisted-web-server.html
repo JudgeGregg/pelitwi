@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Configuring and Using the Twisted Web Server</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Configuring and Using the Twisted Web Server</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="twisted-web-development">
+<h2><a class="toc-backref" href="#id1">Twisted Web Development</a></h2>
+<p id="web-howto-using-twistedweb-development">Twisted Web serves Python objects that implement the interface
+IResource.</p>
+<img alt="" src="../img/web-process.png"/>
+<div class="section" id="main-concepts">
+<h3><a class="toc-backref" href="#id2">Main Concepts</a></h3>
+<ul class="simple">
+<li><cite>Site Objects &lt;web-howto-using-twistedweb-sites&gt;</cite> are responsible for
+creating <tt class="docutils literal">HTTPChannel</tt> instances to parse the HTTP request,
+and begin the object lookup process. They contain the root Resource,
+the resource which represents the URL <tt class="docutils literal">/</tt> on the site.</li>
+<li><cite>Resource &lt;web-howto-using-twistedweb-resources&gt;</cite> objects represent a single URL segment. The <cite>IResource &lt;twisted.web.resource.IResource&gt;</cite> interface describes the methods a Resource object must implement in order to participate in the object publishing process.</li>
+<li><cite>Resource trees &lt;web-howto-using-twistedweb-trees&gt;</cite> are arrangements of Resource objects into a Resource tree. Starting at the root Resource object, the tree of Resource objects defines the URLs which will be valid.</li>
+<li><cite>.rpy scripts &lt;web-howto-using-twistedweb-rpys&gt;</cite> are python scripts which the twisted.web static file server will execute, much like a CGI. However, unlike CGI they must create a Resource object which will be rendered when the URL is visited.</li>
+<li><cite>Resource rendering &lt;web-howto-using-twistedweb-rendering&gt;</cite> occurs when Twisted Web locates a leaf Resource object. A Resource can either return an html string or write to the request object.</li>
+<li><cite>Session &lt;web-howto-using-twistedweb-sessions&gt;</cite> objects allow you to store information across multiple requests. Each individual browser using the system has a unique Session instance.</li>
+</ul>
+<p>The Twisted Web server is started through the Twisted Daemonizer, as in:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>twistd web
+</pre></div>
+</div>
+<div class="section" id="site-objects">
+<h3><a class="toc-backref" href="#id3">Site Objects</a></h3>
+<p id="web-howto-using-twistedweb-sites">Site objects serve as the glue between a port to listen for HTTP requests on, and a root Resource object.</p>
+<p>When using <tt class="docutils literal">twistd <span class="pre">-n</span> web <span class="pre">--path</span> /foo/bar/baz</tt> , a Site object is created with a root Resource that serves files out of the given path.</p>
+<p>You can also create a <tt class="docutils literal">Site</tt> instance by hand, passing
+it a <tt class="docutils literal">Resource</tt> object which will serve as the root of the
+site:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">server</span><span class="p">,</span> <span class="n">resource</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+
+<span class="k">class</span> <span class="nc">Simple</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="n">isLeaf</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">b</span><span class="s2">"&lt;html&gt;Hello, world!&lt;/html&gt;"</span>
+
+<span class="n">site</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">Simple</span><span class="p">())</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">8080</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="section" id="resource-objects">
+<h3><a class="toc-backref" href="#id4">Resource objects</a></h3>
+<p id="web-howto-using-twistedweb-resources"><tt class="docutils literal">Resource</tt> objects represent a single URL segment of a site. During URL parsing, <tt class="docutils literal">getChild</tt> is called on the current <tt class="docutils literal">Resource</tt> to produce the next <tt class="docutils literal">Resource</tt> object.</p>
+<p>When the leaf Resource is reached, either because there were no more URL segments or a Resource had isLeaf set to True, the leaf Resource is rendered by calling <tt class="docutils literal">render(request)</tt> . See "Resource Rendering" below for more about this.</p>
+<p>During the Resource location process, the URL segments which have already been processed and those which have not yet been processed are available in <tt class="docutils literal">request.prepath</tt> and <tt class="docutils literal">request.postpath</tt> .</p>
+<p>A Resource can know where it is in the URL tree by looking at <tt class="docutils literal">request.prepath</tt> , a list of URL segment strings.</p>
+<p>A Resource can know which path segments will be processed after it by looking at <tt class="docutils literal">request.postpath</tt> .</p>
+<p>If the URL ends in a slash, for example <tt class="docutils literal"><span class="pre">http://example.com/foo/bar/</span></tt> , the final URL segment will be an empty string. Resources can thus know if they were requested with or without a final slash.</p>
+<p>Here is a simple Resource object:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+
+<span class="k">class</span> <span class="nc">Hello</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="n">isLeaf</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">def</span> <span class="nf">getChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">''</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="n">Resource</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="s2">"Hello, world! I am located at </span><span class="si">{}</span><span class="s2">."</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">prepath</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf8"</span><span class="p">)</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">Hello</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="section" id="resource-trees">
+<h3><a class="toc-backref" href="#id5">Resource Trees</a></h3>
+<p id="web-howto-using-twistedweb-trees">Resources can be arranged in trees using <tt class="docutils literal">putChild</tt> . <tt class="docutils literal">putChild</tt> puts a Resource instance into another Resource instance, making it available at the given path segment name:</p>
+<div class="highlight"><pre><span></span><span class="n">root</span> <span class="o">=</span> <span class="n">Hello</span><span class="p">()</span>
+<span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s1">'fred'</span><span class="p">,</span> <span class="n">Hello</span><span class="p">())</span>
+<span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s1">'bob'</span><span class="p">,</span> <span class="n">Hello</span><span class="p">())</span>
+</pre></div>
+<p>If this root resource is served as the root of a Site instance, the following URLs will all be valid:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">http://example.com/</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">http://example.com/fred</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">http://example.com/bob</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">http://example.com/fred/</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">http://example.com/bob/</span></tt></li>
+</ul>
+</div>
+<div class="section" id="rpy-scripts">
+<h3><a class="toc-backref" href="#id6">.rpy scripts</a></h3>
+<p id="web-howto-using-twistedweb-rpys">Files with the extension <tt class="docutils literal">.rpy</tt> are python scripts which, when placed in a directory served by Twisted Web, will be executed when visited through the web.</p>
+<p>An <tt class="docutils literal">.rpy</tt> script must define a variable, <tt class="docutils literal">resource</tt> , which is the Resource object that will render the request.</p>
+<p><tt class="docutils literal">.rpy</tt> files are very convenient for rapid development and prototyping. Since they are executed on every web request, defining a Resource subclass in an <tt class="docutils literal">.rpy</tt> will make viewing the results of changes to your class visible simply by refreshing the page:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+
+<span class="k">class</span> <span class="nc">MyResource</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">b</span><span class="s2">"&lt;html&gt;Hello, world!&lt;/html&gt;"</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">MyResource</span><span class="p">()</span>
+</pre></div>
+<p>However, it is often a better idea to define Resource subclasses in Python modules. In order for changes in modules to be visible, you must either restart the Python process, or reload the module:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">myresource</span>
+
+<span class="c1">## Comment out this line when finished debugging</span>
+<span class="n">reload</span><span class="p">(</span><span class="n">myresource</span><span class="p">)</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">myresource</span><span class="o">.</span><span class="n">MyResource</span><span class="p">()</span>
+</pre></div>
+<p>Creating a Twisted Web server which serves a directory is easy:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>twistd -n web --path /Users/dsp/Sites
+</pre></div>
+</div>
+<div class="section" id="resource-rendering">
+<h3><a class="toc-backref" href="#id7">Resource rendering</a></h3>
+<p id="web-howto-using-twistedweb-rendering">Resource rendering occurs when Twisted Web locates a leaf Resource object to handle a web request. A Resource's <tt class="docutils literal">render</tt> method may do various things to produce output which will be sent back to the browser:</p>
+<ul class="simple">
+<li>Return a string</li>
+<li>Call <tt class="docutils literal">request.write(b"stuff")</tt> as many times as desired, then call <tt class="docutils literal">request.finish()</tt> and return <tt class="docutils literal">server.NOT_DONE_YET</tt> (This is deceptive, since you are in fact done with the request, but is the correct way to do this)</li>
+<li>Request a <tt class="docutils literal">Deferred</tt> , return <tt class="docutils literal">server.NOT_DONE_YET</tt> , and call <tt class="docutils literal"><span class="pre">request.write("stuff")</span></tt> and <tt class="docutils literal">request.finish()</tt> later, in a callback on the <tt class="docutils literal">Deferred</tt> .</li>
+</ul>
+<p>The <cite>Resource &lt;twisted.web.resource.Resource&gt;</cite>
+class, which is usually what one's Resource classes subclass, has a
+convenient default implementation
+of <tt class="docutils literal">render</tt> . It will call a method
+named <tt class="docutils literal">self.render_METHOD</tt>
+where "METHOD" is whatever HTTP method was used to request this
+resource. Examples: request_GET, request_POST, request_HEAD, and so
+on. It is recommended that you have your resource classes
+subclass <cite>Resource &lt;twisted.web.resource.Resource&gt;</cite>
+and implement <tt class="docutils literal">render_METHOD</tt> methods as
+opposed to <tt class="docutils literal">render</tt> itself. Note that for
+certain resources, <tt class="docutils literal">request_POST = request_GET</tt> may be desirable in case one wants to process
+arguments passed to the resource regardless of whether they used GET
+(<tt class="docutils literal"><span class="pre">?foo=bar&amp;baz=quux</span></tt> , and so forth) or POST.</p>
+</div>
+<div class="section" id="request-encoders">
+<h3><a class="toc-backref" href="#id8">Request encoders</a></h3>
+<p>When using a <cite>Resource &lt;twisted.web.resource.Resource&gt;</cite> ,
+one can specify wrap it using a
+<cite>EncodingResourceWrapper &lt;twisted.web.resource.EncodingResourceWrapper&gt;</cite>
+and passing a list of encoder factories.  The encoder factories are
+called when a request is processed and potentially return an encoder.
+By default twisted provides
+<cite>GzipEncoderFactory &lt;twisted.web.server.GzipEncoderFactory&gt;</cite> which
+manages standard gzip compression. You can use it this way:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.server</span> <span class="kn">import</span> <span class="n">Site</span><span class="p">,</span> <span class="n">GzipEncoderFactory</span>
+<span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span><span class="p">,</span> <span class="n">EncodingResourceWrapper</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+
+<span class="k">class</span> <span class="nc">Simple</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="n">isLeaf</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">b</span><span class="s2">"&lt;html&gt;Hello, world!&lt;/html&gt;"</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">Simple</span><span class="p">()</span>
+<span class="n">wrapped</span> <span class="o">=</span> <span class="n">EncodingResourceWrapper</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="p">[</span><span class="n">GzipEncoderFactory</span><span class="p">()])</span>
+<span class="n">site</span> <span class="o">=</span> <span class="n">Site</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">8080</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+<p>Using compression on SSL served resources where the user can influence the
+content can lead to information leak, so be careful which resources use
+request encoders.</p>
+<p>Note that only encoder can be used per request: the first encoder factory
+returning an object will be used, so the order in which they are specified
+matters.</p>
+</div>
+<div class="section" id="session">
+<h3><a class="toc-backref" href="#id9">Session</a></h3>
+<p id="web-howto-using-twistedweb-sessions">HTTP is a stateless protocol; every request-response is treated as an individual unit, distinguishable from any other request only by the URL requested. With the advent of Cookies in the mid nineties, dynamic web servers gained the ability to distinguish between requests coming from different <em>browser sessions</em> by sending a Cookie to a browser. The browser then sends this cookie whenever it makes a request to a web server, allowing the server to track which requests come from which browser session.</p>
+<p>Twisted Web provides an abstraction of this browser-tracking behavior called the <em>Session object</em> . Calling <tt class="docutils literal">request.getSession()</tt> checks to see if a session cookie has been set; if not, it creates a unique session id, creates a Session object, stores it in the Site, and returns it. If a session object already exists, the same session object is returned. In this way, you can store data specific to the session in the session object.</p>
+<img alt="" src="../img/web-session.png"/>
+</div>
+<div class="section" id="proxies-and-reverse-proxies">
+<h3><a class="toc-backref" href="#id10">Proxies and reverse proxies</a></h3>
+<p id="web-howto-using-twistedweb-proxies">A proxy is a general term for a server that functions as an intermediary
+between clients and other servers.</p>
+<p>Twisted supports two main proxy variants: a <cite>Proxy &lt;twisted.web.proxy.Proxy&gt;</cite> and a <cite>ReverseProxy &lt;twisted.web.proxy.ReverseProxy&gt;</cite> .</p>
+<div class="section" id="proxy">
+<h4><a class="toc-backref" href="#id11">Proxy</a></h4>
+<p>A proxy forwards requests made by a client to a destination server. Proxies
+typically sit on the internal network for a client or out on the internet, and
+have many uses, including caching, packet filtering, auditing, and circumventing
+local access restrictions to web content.</p>
+<p>Here is an example of a simple but complete web proxy:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">proxy</span><span class="p">,</span> <span class="n">http</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+
+<span class="k">class</span> <span class="nc">ProxyFactory</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">HTTPFactory</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">buildProtocol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">addr</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">proxy</span><span class="o">.</span><span class="n">Proxy</span><span class="p">()</span>
+
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">8080</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">ProxyFactory</span><span class="p">())</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+<p>With this proxy running, you can configure your web browser to use <tt class="docutils literal">localhost:8080</tt> as a proxy. After doing so, when browsing the web
+all requests will go through this proxy.</p>
+<p><cite>Proxy &lt;twisted.web.proxy.Proxy&gt;</cite> inherits
+from <cite>http.HTTPChannel &lt;twisted.web.http.HTTPChannel&gt;</cite> . Each client
+request to the proxy generates a <cite>ProxyRequest &lt;twisted.web.proxy.ProxyRequest&gt;</cite> from the proxy to the destination
+server on behalf of the client. <tt class="docutils literal">ProxyRequest</tt> uses
+a <cite>ProxyClientFactory &lt;twisted.web.proxy.ProxyClientFactory&gt;</cite> to create
+an instance of the <cite>ProxyClient &lt;twisted.web.proxy.ProxyClient&gt;</cite>
+protocol for the connection. <tt class="docutils literal">ProxyClient</tt> inherits
+from <cite>http.HTTPClient &lt;twisted.web.http.HTTPClient&gt;</cite> . Subclass <tt class="docutils literal">ProxyRequest</tt> to
+customize the way requests are processed or logged.</p>
+</div>
+<div class="section" id="reverseproxyresource">
+<h4><a class="toc-backref" href="#id12">ReverseProxyResource</a></h4>
+<p>A reverse proxy retrieves resources from other servers on behalf of a
+client. Reverse proxies typically sit inside the server's internal network and
+are used for caching, application firewalls, and load balancing.</p>
+<p>Here is an example of a basic reverse proxy:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">proxy</span><span class="p">,</span> <span class="n">server</span>
+
+<span class="n">site</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">proxy</span><span class="o">.</span><span class="n">ReverseProxyResource</span><span class="p">(</span><span class="s1">'www.yahoo.com'</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="s1">''</span><span class="p">))</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">8080</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+<p>With this reverse proxy running locally, you can
+visit <tt class="docutils literal"><span class="pre">http://localhost:8080</span></tt> in your web browser, and the reverse
+proxy will proxy your connection to <tt class="docutils literal">www.yahoo.com</tt>.</p>
+<p>In this example we use <tt class="docutils literal">server.Site</tt> to serve
+a <tt class="docutils literal">ReverseProxyResource</tt> directly. There is
+also a <tt class="docutils literal">ReverseProxy</tt> family of classes
+in <tt class="docutils literal">twisted.web.proxy</tt> mirroring those of the <tt class="docutils literal">Proxy</tt>
+family:</p>
+<p>Like <tt class="docutils literal">Proxy</tt> , <cite>ReverseProxy &lt;twisted.web.proxy.ReverseProxy&gt;</cite> inherits
+from <tt class="docutils literal">http.HTTPChannel</tt> . Each client request to the reverse proxy
+generates a <cite>ReverseProxyRequest &lt;twisted.web.proxy.ReverseProxyRequest&gt;</cite> to the destination
+server. Like <tt class="docutils literal">ProxyRequest</tt> , <cite>ReverseProxyRequest &lt;twisted.web.proxy.ReverseProxyRequest&gt;</cite> uses a <cite>ProxyClientFactory &lt;twisted.web.proxy.ProxyClientFactory&gt;</cite> to create an instance of
+the <cite>ProxyClient &lt;twisted.web.proxy.ProxyClient&gt;</cite> protocol for
+the connection.</p>
+<p>Additional examples of proxies and reverse proxies can be found in
+the <a class="reference external" href="../examples/index.html">Twisted web examples</a></p>
+</div>
+</div>
+</div>
+<div class="section" id="advanced-configuration">
+<h2><a class="toc-backref" href="#id13">Advanced Configuration</a></h2>
+<p>Non-trivial configurations of Twisted Web are achieved with Python
+configuration files. This is a Python snippet which builds up a
+variable called application. Usually,
+the <tt class="docutils literal">twisted.application.strports.service</tt> function will be used to build a
+service instance that will be used to make the application listen on a TCP port
+(80, in case direct web serving is desired), with the listener being
+a <cite>twisted.web.server.Site</cite> . The resulting file
+can then be run with <tt class="docutils literal">twistd <span class="pre">-y</span></tt> . Alternatively a reactor object can be used directly to make
+a runnable script.</p>
+<p>The <tt class="docutils literal">Site</tt> will wrap a <tt class="docutils literal">Resource</tt> object -- the
+root.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.application</span> <span class="kn">import</span> <span class="n">internet</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">strports</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">static</span><span class="p">,</span> <span class="n">server</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/htdocs"</span><span class="p">)</span>
+<span class="n">application</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">Application</span><span class="p">(</span><span class="s1">'web'</span><span class="p">)</span>
+<span class="n">site</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">sc</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">IServiceCollection</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
+<span class="n">i</span> <span class="o">=</span> <span class="n">strports</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">"tcp:80"</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
+<span class="n">i</span><span class="o">.</span><span class="n">setServiceParent</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+</pre></div>
+<p>Most advanced configurations will be in the form of tweaking the
+root resource object.</p>
+<div class="section" id="adding-children">
+<h3><a class="toc-backref" href="#id14">Adding Children</a></h3>
+<p>Usually, the root's children will be based on the filesystem's contents.
+It is possible to override the filesystem by explicit <tt class="docutils literal">putChild</tt>
+methods.</p>
+<p>Here are two examples. The first one adds a <tt class="docutils literal">/doc</tt> child
+to serve the documentation of the installed packages, while the second
+one adds a <tt class="docutils literal"><span class="pre">cgi-bin</span></tt> directory for CGI scripts.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">static</span><span class="p">,</span> <span class="n">server</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/htdocs"</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s2">"doc"</span><span class="p">,</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/usr/share/doc"</span><span class="p">))</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">))</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">endpoints</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">static</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">twcgi</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/htdocs"</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">putChild</span><span class="p">(</span><span class="sa">b</span><span class="s2">"cgi-bin"</span><span class="p">,</span> <span class="n">twcgi</span><span class="o">.</span><span class="n">CGIDirectory</span><span class="p">(</span><span class="s2">"/var/www/cgi-bin"</span><span class="p">))</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoints</span><span class="o">.</span><span class="n">TCP4ServerEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
+<span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">))</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="section" id="modifying-file-resources">
+<h3><a class="toc-backref" href="#id15">Modifying File Resources</a></h3>
+<p><tt class="docutils literal">File</tt> resources, be they root object or children
+thereof, have two important attributes that often need to be
+modified: <tt class="docutils literal">indexNames</tt>
+and <tt class="docutils literal">processors</tt> . <tt class="docutils literal">indexNames</tt> determines which
+files are treated as "index files" -- served up when a directory
+is rendered. <tt class="docutils literal">processors</tt> determine how certain file
+extensions are treated.</p>
+<p>Here is an example for both, creating a site where all <tt class="docutils literal">.rpy</tt>
+extensions are Resource Scripts, and which renders directories by
+searching for a <tt class="docutils literal">index.rpy</tt> file.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.application</span> <span class="kn">import</span> <span class="n">internet</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">strports</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">static</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">script</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/htdocs"</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">indexNames</span><span class="o">=</span><span class="p">[</span><span class="s1">'index.rpy'</span><span class="p">]</span>
+<span class="n">root</span><span class="o">.</span><span class="n">processors</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'.rpy'</span><span class="p">:</span> <span class="n">script</span><span class="o">.</span><span class="n">ResourceScript</span><span class="p">}</span>
+<span class="n">application</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">Application</span><span class="p">(</span><span class="s1">'web'</span><span class="p">)</span>
+<span class="n">sc</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">IServiceCollection</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
+<span class="n">site</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">i</span> <span class="o">=</span> <span class="n">strports</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">"tcp:80"</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
+<span class="n">i</span><span class="o">.</span><span class="n">setServiceParent</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+</pre></div>
+<p><tt class="docutils literal">File</tt> objects also have a method called <tt class="docutils literal">ignoreExt</tt> .
+This method can be used to give extension-less URLs to users, so that
+implementation is hidden. Here is an example:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.application</span> <span class="kn">import</span> <span class="n">internet</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">strports</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">static</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">script</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/htdocs"</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">ignoreExt</span><span class="p">(</span><span class="s2">".rpy"</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">processors</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'.rpy'</span><span class="p">:</span> <span class="n">script</span><span class="o">.</span><span class="n">ResourceScript</span><span class="p">}</span>
+<span class="n">application</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">Application</span><span class="p">(</span><span class="s1">'web'</span><span class="p">)</span>
+<span class="n">sc</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">IServiceCollection</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
+<span class="n">site</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">i</span> <span class="o">=</span> <span class="n">strports</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">"tcp:80"</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
+<span class="n">i</span><span class="o">.</span><span class="n">setServiceParent</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+</pre></div>
+<p>Now, a URL such as <tt class="docutils literal">/foo</tt> might be served from a Resource
+Script called <tt class="docutils literal">foo.rpy</tt> , if no file by the name of <tt class="docutils literal">foo</tt>
+exists.</p>
+<p><tt class="docutils literal">File</tt> objects will try to automatically determine the Content-Type and Content-Encoding headers.
+There is a small set of known mime types and encodings which augment the default mime types provided by the Python standard library <cite>mimetypes</cite>.
+You can always modify the content type and encoding mappings by manipulating the instance variables.</p>
+<p>For example to recognize WOFF File Format 2.0 and set the right Content-Type header you can modify the <cite>contentTypes</cite> member of an instance:</p>
+<pre class="literal-block">
+.. code-block:: python
+</pre>
+<blockquote>
+<p>from twisted.application import internet, service, strports
+from twisted.web import static, server, script</p>
+<p>root = static.File("/srv/fonts")</p>
+<p>root.contentTypes[".woff2"] = "application/font-woff2"</p>
+<p>application = service.Application('web')
+sc = service.IServiceCollection(application)
+site = server.Site(root)
+i = strports.service("<a class="reference external" href="tcp:80">tcp:80</a>", site)
+i.setServiceParent(sc)</p>
+</blockquote>
+</div>
+<div class="section" id="virtual-hosts">
+<h3><a class="toc-backref" href="#id16">Virtual Hosts</a></h3>
+<p>Virtual hosting is done via a special resource, that should be used
+as the root resource
+-- <tt class="docutils literal">NameVirtualHost</tt> . <tt class="docutils literal">NameVirtualHost</tt> has an
+attribute named <tt class="docutils literal">default</tt> , which holds the default
+website. If a different root for some other name is desired,
+the <tt class="docutils literal">addHost</tt> method should be called.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.application</span> <span class="kn">import</span> <span class="n">internet</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">strports</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">static</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">vhost</span><span class="p">,</span> <span class="n">script</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">vhost</span><span class="o">.</span><span class="n">NameVirtualHost</span><span class="p">()</span>
+
+<span class="c1"># Add a default -- htdocs</span>
+<span class="n">root</span><span class="o">.</span><span class="n">default</span><span class="o">=</span><span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/htdocs"</span><span class="p">)</span>
+
+<span class="c1"># Add a simple virtual host -- foo.com</span>
+<span class="n">root</span><span class="o">.</span><span class="n">addHost</span><span class="p">(</span><span class="s2">"foo.com"</span><span class="p">,</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/foo"</span><span class="p">))</span>
+
+<span class="c1"># Add a simple virtual host -- bar.com</span>
+<span class="n">root</span><span class="o">.</span><span class="n">addHost</span><span class="p">(</span><span class="s2">"bar.com"</span><span class="p">,</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/bar"</span><span class="p">))</span>
+
+<span class="c1"># The "baz" people want to use Resource Scripts in their web site</span>
+<span class="n">baz</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/baz"</span><span class="p">)</span>
+<span class="n">baz</span><span class="o">.</span><span class="n">processors</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'.rpy'</span><span class="p">:</span> <span class="n">script</span><span class="o">.</span><span class="n">ResourceScript</span><span class="p">}</span>
+<span class="n">baz</span><span class="o">.</span><span class="n">ignoreExt</span><span class="p">(</span><span class="s1">'.rpy'</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">addHost</span><span class="p">(</span><span class="s1">'baz'</span><span class="p">,</span> <span class="n">baz</span><span class="p">)</span>
+
+<span class="n">application</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">Application</span><span class="p">(</span><span class="s1">'web'</span><span class="p">)</span>
+<span class="n">sc</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">IServiceCollection</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
+<span class="n">site</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">i</span> <span class="o">=</span> <span class="n">strports</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">"tcp:80"</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
+<span class="n">i</span><span class="o">.</span><span class="n">setServiceParent</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="advanced-techniques">
+<h3><a class="toc-backref" href="#id17">Advanced Techniques</a></h3>
+<p>Since the configuration is a Python snippet, it is possible to
+use the full power of Python. Here are some simple examples:</p>
+<div class="highlight"><pre><span></span><span class="c1"># No need for configuration of virtual hosts -- just make sure</span>
+<span class="c1"># a directory /var/vhosts/&lt;vhost name&gt; exists:</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">vhost</span><span class="p">,</span> <span class="n">static</span><span class="p">,</span> <span class="n">server</span>
+<span class="kn">from</span> <span class="nn">twisted.application</span> <span class="kn">import</span> <span class="n">internet</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">strports</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">vhost</span><span class="o">.</span><span class="n">NameVirtualHost</span><span class="p">()</span>
+<span class="n">root</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/htdocs"</span><span class="p">)</span>
+<span class="k">for</span> <span class="nb">dir</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="s2">"/var/vhosts"</span><span class="p">):</span>
+    <span class="n">root</span><span class="o">.</span><span class="n">addHost</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">"/var/vhosts"</span><span class="p">,</span> <span class="nb">dir</span><span class="p">)))</span>
+
+<span class="n">application</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">Application</span><span class="p">(</span><span class="s1">'web'</span><span class="p">)</span>
+<span class="n">sc</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">IServiceCollection</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
+<span class="n">site</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">i</span> <span class="o">=</span> <span class="n">strports</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">"tcp:80"</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
+<span class="n">i</span><span class="o">.</span><span class="n">setServiceParent</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+</pre></div>
+<div class="highlight"><pre><span></span><span class="c1"># Determine ports we listen on based on a file with numbers:</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">vhost</span><span class="p">,</span> <span class="n">static</span><span class="p">,</span> <span class="n">server</span>
+<span class="kn">from</span> <span class="nn">twisted.application</span> <span class="kn">import</span> <span class="n">internet</span><span class="p">,</span> <span class="n">service</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/var/www/htdocs"</span><span class="p">)</span>
+
+<span class="n">site</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">application</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">Application</span><span class="p">(</span><span class="s1">'web'</span><span class="p">)</span>
+<span class="n">serviceCollection</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">IServiceCollection</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"/etc/web/ports"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()):</span>
+        <span class="n">serviceCollection</span><span class="o">.</span><span class="n">addCollection</span><span class="p">(</span>
+            <span class="n">strports</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">"tcp:</span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">),</span> <span class="n">site</span><span class="p">)</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-a-twisted-web-server">
+<h2><a class="toc-backref" href="#id18">Running a Twisted Web Server</a></h2>
+<p>In many cases, you'll end up repeating common usage patterns of
+twisted.web. In those cases you'll probably want to use Twisted's
+pre-configured web server setup.</p>
+<p>The easiest way to run a Twisted Web server is with the Twisted Daemonizer.
+For example, this command will run a web server which serves static files from
+a particular directory:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>twistd web --path /path/to/web/content
+</pre></div>
+<p>If you just want to serve content from your own home directory, the
+following will do:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>twistd web --path ~/public_html/
+</pre></div>
+<p>You can stop the server at any time by going back to the directory you
+started it in and running the command:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span><span class="nb">kill</span> <span class="sb">`</span>cat twistd.pid<span class="sb">`</span>
+</pre></div>
+<p>Some other configuration options are available as well:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">--listen</span></tt> : Specify the port for the web
+server to listen on.  This defaults to <a class="reference external" href="tcp:8080">tcp:8080</a>.</li>
+<li><tt class="docutils literal"><span class="pre">--logfile</span></tt> : Specify the path to the
+log file.</li>
+<li><tt class="docutils literal"><span class="pre">--add-header</span></tt>: Specify additional headers to be served with every response.
+These are formatted like <tt class="docutils literal"><span class="pre">--add-header</span> "HeaderName: HeaderValue"</tt>.</li>
+</ul>
+<p>The full set of options that are available can be seen with:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>twistd web --help
+</pre></div>
+<div class="section" id="serving-flat-html">
+<h3><a class="toc-backref" href="#id19">Serving Flat HTML</a></h3>
+<p>Twisted Web serves flat HTML files just as it does any other flat file.</p>
+</div>
+<div class="section" id="resource-scripts">
+<span id="web-howto-using-twistedweb-resourcescripts"></span><h3><a class="toc-backref" href="#id20">Resource Scripts</a></h3>
+<p>A Resource script is a Python file ending with the extension <tt class="docutils literal">.rpy</tt> , which is required to create an instance of a (subclass of a) <cite>twisted.web.resource.Resource</cite> .</p>
+<p>Resource scripts have 3 special variables:</p>
+<ul class="simple">
+<li><tt class="docutils literal">__file__</tt> : The name of the .rpy file, including the full path.  This variable is automatically defined and present within the namespace.</li>
+<li><tt class="docutils literal">registry</tt> : An object of class <cite>static.Registry &lt;twisted.web.static.Registry&gt;</cite> . It can be used to access and set persistent data keyed by a class.</li>
+<li><tt class="docutils literal">resource</tt> : The variable which must be defined by the script and set to the resource instance that will be used to render the page.</li>
+</ul>
+<p>A very simple Resource Script might look like:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">resource</span>
+<span class="k">class</span> <span class="nc">MyGreatResource</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">b</span><span class="s2">"&lt;html&gt;foo&lt;/html&gt;"</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">MyGreatResource</span><span class="p">()</span>
+</pre></div>
+<p>A slightly more complicated resource script, which accesses some
+persistent data, might look like:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">resource</span>
+<span class="kn">from</span> <span class="nn">SillyWeb</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+<span class="n">counter</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">getComponent</span><span class="p">(</span><span class="n">Counter</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">counter</span><span class="p">:</span>
+   <span class="n">registry</span><span class="o">.</span><span class="n">setComponent</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="n">Counter</span><span class="p">())</span>
+<span class="n">counter</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">getComponent</span><span class="p">(</span><span class="n">Counter</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">MyResource</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">counter</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="s2">"you are visitor </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">getValue</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">output</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf8"</span><span class="p">)</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">MyResource</span><span class="p">()</span>
+</pre></div>
+<p>This is assuming you have the <tt class="docutils literal">SillyWeb.Counter</tt> module,
+implemented something like the following:</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Counter</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">increment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">getValue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+</pre></div>
+</div>
+<div class="section" id="web-uis">
+<h3><a class="toc-backref" href="#id21">Web UIs</a></h3>
+<p>The <a class="reference external" href="https://launchpad.net/nevow">Nevow</a> framework, available as
+part of the <a class="reference external" href="https://launchpad.net/quotient">Quotient</a> project,
+is an advanced system for giving Web UIs to your application. Nevow uses Twisted Web but is
+not itself part of Twisted.</p>
+</div>
+<div class="section" id="spreadable-web-servers">
+<span id="web-howto-using-twistedweb-spreadablewebservers"></span><h3><a class="toc-backref" href="#id22">Spreadable Web Servers</a></h3>
+<p>One of the most interesting applications of Twisted Web is the distributed webserver; multiple servers can all answer requests on the same port, using the <cite>twisted.spread</cite> package for "spreadable" computing.  In two different directories, run the commands:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>twistd web --user
+<span class="gp">% </span>twistd web --personal <span class="o">[</span>other options, <span class="k">if</span> you desire<span class="o">]</span>
+</pre></div>
+<p>Once you're running both of these instances, go to <tt class="docutils literal"><span class="pre">http://localhost:8080/your_username.twistd/</span></tt> -- you will see the front page from the server you created with the <tt class="docutils literal"><span class="pre">--personal</span></tt> option.  What's happening here is that the request you've sent is being relayed from the central (User) server to your own (Personal) server, over a PB connection.  This technique can be highly useful for small "community" sites; using the code that makes this demo work, you can connect one HTTP port to multiple resources running with different permissions on the same machine, on different local machines, or even over the internet to a remote site.</p>
+<p>By default, a personal server listens on a UNIX socket in the owner's home
+directory.  The <tt class="docutils literal"><span class="pre">--listen</span></tt> option can be used to make
+it listen on a different address, such as a TCP or SSL server or on a UNIX
+server in a different location.  If you use this option to make a personal
+server listen on a different address, the central (User) server won't be
+able to find it, but a custom server which uses the same APIs as the central
+server might.  Another use of the <tt class="docutils literal"><span class="pre">--listen</span></tt> option
+is to make the UNIX server robust against system crashes.  If the server
+crashes and the UNIX socket is left on the filesystem, the personal server
+will not be able to restart until it is removed.  However, if <tt class="docutils literal"><span class="pre">--listen</span> <span class="pre">unix:/home/username/.twistd-web-pb:wantPID=1</span></tt> is
+supplied when creating the personal server, then a lockfile will be used to
+keep track of whether the server socket is in use and automatically delete
+it when it is not.</p>
+</div>
+<div class="section" id="serving-php-perl-cgi">
+<h3><a class="toc-backref" href="#id23">Serving PHP/Perl/CGI</a></h3>
+<p>Everything related to CGI is located in
+the <tt class="docutils literal">twisted.web.twcgi</tt> , and it's here you'll find the
+classes that you need to subclass in order to support the language of
+your (or somebody elses) taste. You'll also need to create your own
+kind of resource if you are using a non-unix operating system (such as
+Windows), or if the default resources has wrong pathnames to the
+parsers.</p>
+<p>The following snippet is a .rpy that serves perl-files. Look at <tt class="docutils literal">twisted.web.twcgi</tt>
+for more examples regarding twisted.web and CGI.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">static</span><span class="p">,</span> <span class="n">twcgi</span>
+
+<span class="k">class</span> <span class="nc">PerlScript</span><span class="p">(</span><span class="n">twcgi</span><span class="o">.</span><span class="n">FilteredScript</span><span class="p">):</span>
+    <span class="nb">filter</span> <span class="o">=</span> <span class="s1">'/usr/bin/perl'</span> <span class="c1"># Points to the perl parser</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"/perlsite"</span><span class="p">)</span> <span class="c1"># Points to the perl website</span>
+<span class="n">resource</span><span class="o">.</span><span class="n">processors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">".pl"</span><span class="p">:</span> <span class="n">PerlScript</span><span class="p">}</span> <span class="c1"># Files that end with .pl will be</span>
+                                          <span class="c1"># processed by PerlScript</span>
+<span class="n">resource</span><span class="o">.</span><span class="n">indexNames</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'index.pl'</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="serving-wsgi-applications">
+<h3><a class="toc-backref" href="#id24">Serving WSGI Applications</a></h3>
+<p><a class="reference external" href="http://wsgi.org">WSGI</a> is the Web Server Gateway
+Interface. It is a specification for web servers and application servers to
+communicate with Python web applications. All modern Python web frameworks
+support the WSGI interface.</p>
+<p>The easiest way to get started with WSGI application is to use the twistd
+command:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>twistd -n web --wsgi<span class="o">=</span>helloworld.application
+</pre></div>
+<p>This assumes that you have a WSGI application called application in
+your helloworld module/package, which might look like this:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
+    <span class="sd">"""Basic WSGI Application"""</span>
+    <span class="n">start_response</span><span class="p">(</span><span class="s1">'200 OK'</span><span class="p">,</span> <span class="p">[(</span><span class="s1">'Content-type'</span><span class="p">,</span><span class="s1">'text/plain'</span><span class="p">)])</span>
+    <span class="k">return</span> <span class="p">[</span><span class="sa">b</span><span class="s1">'Hello World!'</span><span class="p">]</span>
+</pre></div>
+<p>The above setup will be suitable for many applications where all that is
+needed is to server the WSGI application at the site's root. However, for
+greater control, Twisted provides support for using WSGI applications as
+resources <tt class="docutils literal">twisted.web.wsgi.WSGIResource</tt> .</p>
+<p>Here is an example of a WSGI application being served as the root resource
+for a site, in the following tac file:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">server</span>
+<span class="kn">from</span> <span class="nn">twisted.web.wsgi</span> <span class="kn">import</span> <span class="n">WSGIResource</span>
+<span class="kn">from</span> <span class="nn">twisted.python.threadpool</span> <span class="kn">import</span> <span class="n">ThreadPool</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+<span class="kn">from</span> <span class="nn">twisted.application</span> <span class="kn">import</span> <span class="n">service</span><span class="p">,</span> <span class="n">strports</span>
+
+<span class="c1"># Create and start a thread pool,</span>
+<span class="n">wsgiThreadPool</span> <span class="o">=</span> <span class="n">ThreadPool</span><span class="p">()</span>
+<span class="n">wsgiThreadPool</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<span class="c1"># ensuring that it will be stopped when the reactor shuts down</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">addSystemEventTrigger</span><span class="p">(</span><span class="s1">'after'</span><span class="p">,</span> <span class="s1">'shutdown'</span><span class="p">,</span> <span class="n">wsgiThreadPool</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
+    <span class="sd">"""A basic WSGI application"""</span>
+    <span class="n">start_response</span><span class="p">(</span><span class="s1">'200 OK'</span><span class="p">,</span> <span class="p">[(</span><span class="s1">'Content-type'</span><span class="p">,</span><span class="s1">'text/plain'</span><span class="p">)])</span>
+    <span class="k">return</span> <span class="p">[</span><span class="sa">b</span><span class="s1">'Hello World!'</span><span class="p">]</span>
+
+<span class="c1"># Create the WSGI resource</span>
+<span class="n">wsgiAppAsResource</span> <span class="o">=</span> <span class="n">WSGIResource</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="n">wsgiThreadPool</span><span class="p">,</span> <span class="n">application</span><span class="p">)</span>
+
+<span class="c1"># Hooks for twistd</span>
+<span class="n">application</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">Application</span><span class="p">(</span><span class="s1">'Twisted.web.wsgi Hello World Example'</span><span class="p">)</span>
+<span class="n">server</span> <span class="o">=</span> <span class="n">strports</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s1">'tcp:8080'</span><span class="p">,</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">wsgiAppAsResource</span><span class="p">))</span>
+<span class="n">server</span><span class="o">.</span><span class="n">setServiceParent</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
+</pre></div>
+<p>This can then be run like any other .tac file:</p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>twistd -ny myapp.tac
+</pre></div>
+<p>Because of the synchronous nature of WSGI, each application call (for
+each request) is called within a thread, and the result is written back to the
+web server. For this, a <tt class="docutils literal">twisted.python.threadpool.ThreadPool</tt>
+instance is used.</p>
+</div>
+<div class="section" id="using-vhostmonster">
+<h3><a class="toc-backref" href="#id25">Using VHostMonster</a></h3>
+<p>It is common to use one server (for example, Apache) on a site with multiple
+names which then uses reverse proxy (in Apache, via <tt class="docutils literal">mod_proxy</tt> ) to different
+internal web servers, possibly on different machines. However, naive
+configuration causes miscommunication: the internal server firmly believes it
+is running on "internal-name:port" , and will generate URLs to that effect,
+which will be completely wrong when received by the client.</p>
+<p>While Apache has the ProxyPassReverse directive, it is really a hack
+and is nowhere near comprehensive enough. Instead, the recommended practice
+in case the internal web server is Twisted Web is to use VHostMonster.</p>
+<p>From the Twisted side, using VHostMonster is easy: just drop a file named
+(for example) <tt class="docutils literal">vhost.rpy</tt> containing the following:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">vhost</span>
+<span class="n">resource</span> <span class="o">=</span> <span class="n">vhost</span><span class="o">.</span><span class="n">VHostMonsterResource</span><span class="p">()</span>
+</pre></div>
+<p>Make sure the web server is configured with the correct processors
+for the <tt class="docutils literal">rpy</tt> extensions (the web server <tt class="docutils literal">twistd web <span class="pre">--path</span></tt> generates by default is so configured).</p>
+<p>From the Apache side, instead of using the following ProxyPass directive:</p>
+<pre class="literal-block">
+&lt;VirtualHost ip-addr&gt;
+ProxyPass / http://localhost:8538/
+ServerName example.com
+&lt;/VirtualHost&gt;
+</pre>
+<p>Use the following directive:</p>
+<pre class="literal-block">
+&lt;VirtualHost ip-addr&gt;
+ProxyPass / http://localhost:8538/vhost.rpy/http/example.com:80/
+ServerName example.com
+&lt;/VirtualHost&gt;
+</pre>
+<p>Here is an example for Twisted Web's reverse proxy:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.application</span> <span class="kn">import</span> <span class="n">internet</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">strports</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">proxy</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">vhost</span>
+<span class="n">vhostName</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">'example.com'</span>
+<span class="n">reverseProxy</span> <span class="o">=</span> <span class="n">proxy</span><span class="o">.</span><span class="n">ReverseProxyResource</span><span class="p">(</span><span class="s1">'internal'</span><span class="p">,</span> <span class="mi">8538</span><span class="p">,</span>
+                                          <span class="sa">b</span><span class="s1">'/vhost.rpy/http/'</span><span class="o">+</span><span class="n">vhostName</span><span class="o">+</span><span class="sa">b</span><span class="s1">'/'</span><span class="p">)</span>
+<span class="n">root</span> <span class="o">=</span> <span class="n">vhost</span><span class="o">.</span><span class="n">NameVirtualHost</span><span class="p">()</span>
+<span class="n">root</span><span class="o">.</span><span class="n">addHost</span><span class="p">(</span><span class="n">vhostName</span><span class="p">,</span> <span class="n">reverseProxy</span><span class="p">)</span>
+<span class="n">site</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">application</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">Application</span><span class="p">(</span><span class="s1">'web-proxy'</span><span class="p">)</span>
+<span class="n">sc</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">IServiceCollection</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
+<span class="n">i</span> <span class="o">=</span> <span class="n">strports</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">"tcp:80"</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
+<span class="n">i</span><span class="o">.</span><span class="n">setServiceParent</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rewriting-urls">
+<h2><a class="toc-backref" href="#id26">Rewriting URLs</a></h2>
+<p>Sometimes it is convenient to modify the content of
+the <cite>Request &lt;twisted.web.server.Request&gt;</cite> object
+before passing it on. Because this is most often used to rewrite
+either the URL, the similarity to Apache's <tt class="docutils literal">mod_rewrite</tt>
+has inspired the <cite>twisted.web.rewrite</cite>
+module. Using this module is done via wrapping a resource with
+a <cite>twisted.web.rewrite.RewriterResource</cite> which
+then has rewrite rules. Rewrite rules are functions which accept a
+request object, and possible modify it. After all rewrite rules run,
+the child resolution chain continues as if the wrapped resource,
+rather than the <cite>RewriterResource &lt;twisted.web.rewrite.RewriterResource&gt;</cite> , was the child.</p>
+<p>Here is an example, using the only rule currently supplied by Twisted
+itself:</p>
+<div class="highlight"><pre><span></span><span class="n">default_root</span> <span class="o">=</span> <span class="n">rewrite</span><span class="o">.</span><span class="n">RewriterResource</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="n">rewrite</span><span class="o">.</span><span class="n">tildeToUsers</span><span class="p">)</span>
+</pre></div>
+<p>This causes the URL <tt class="docutils literal">/~foo/bar.html</tt> to be treated
+like <tt class="docutils literal">/users/foo/bar.html</tt> . If done after setting
+default's <tt class="docutils literal">users</tt> child to a <cite>distrib.UserDirectory &lt;twisted.web.distrib.UserDirectory&gt;</cite> , it gives a
+configuration similar to the classical configuration of web server,
+common since the first NCSA servers.</p>
+</div>
+<div class="section" id="knowing-when-we-re-not-wanted">
+<h2><a class="toc-backref" href="#id27">Knowing When We're Not Wanted</a></h2>
+<p>Sometimes it is useful to know when the other side has broken the connection.
+Here is an example which does that:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.resource</span> <span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">server</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+<span class="kn">from</span> <span class="nn">twisted.python.util</span> <span class="kn">import</span> <span class="n">println</span>
+
+
+<span class="k">class</span> <span class="nc">ExampleResource</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">render_GET</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">"hello world"</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">notifyFinish</span><span class="p">()</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="n">println</span><span class="p">(</span><span class="s2">"finished normally"</span><span class="p">))</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">addErrback</span><span class="p">(</span><span class="n">println</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">)</span>
+        <span class="n">reactor</span><span class="o">.</span><span class="n">callLater</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">finish</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">server</span><span class="o">.</span><span class="n">NOT_DONE_YET</span>
+
+<span class="n">resource</span> <span class="o">=</span> <span class="n">ExampleResource</span><span class="p">()</span>
+</pre></div>
+<p>This will allow us to run statistics on the log-file to see how many users
+are frustrated after merely 10 seconds.</p>
+</div>
+<div class="section" id="as-is-serving">
+<h2><a class="toc-backref" href="#id28">As-Is Serving</a></h2>
+<p>Sometimes, you want to be able to send headers and status
+directly. While you can do this with a <cite>ResourceScript &lt;twisted.web.script.ResourceScript&gt;</cite> , an easier way is to
+use <cite>ASISProcessor &lt;twisted.web.static.ASISProcessor&gt;</cite> .
+Use it by, for example, adding it as a processor for
+the <tt class="docutils literal">.asis</tt> extension. Here is a sample file:</p>
+<pre class="literal-block">
+HTTP/1.0 200 OK
+Content-Type: text/html
+
+Hello world
+</pre>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#twisted-web-development" id="id1">Twisted Web Development</a><ul>
+<li><a class="reference internal" href="#main-concepts" id="id2">Main Concepts</a></li>
+<li><a class="reference internal" href="#site-objects" id="id3">Site Objects</a></li>
+<li><a class="reference internal" href="#resource-objects" id="id4">Resource objects</a></li>
+<li><a class="reference internal" href="#resource-trees" id="id5">Resource Trees</a></li>
+<li><a class="reference internal" href="#rpy-scripts" id="id6">.rpy scripts</a></li>
+<li><a class="reference internal" href="#resource-rendering" id="id7">Resource rendering</a></li>
+<li><a class="reference internal" href="#request-encoders" id="id8">Request encoders</a></li>
+<li><a class="reference internal" href="#session" id="id9">Session</a></li>
+<li><a class="reference internal" href="#proxies-and-reverse-proxies" id="id10">Proxies and reverse proxies</a><ul>
+<li><a class="reference internal" href="#proxy" id="id11">Proxy</a></li>
+<li><a class="reference internal" href="#reverseproxyresource" id="id12">ReverseProxyResource</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#advanced-configuration" id="id13">Advanced Configuration</a><ul>
+<li><a class="reference internal" href="#adding-children" id="id14">Adding Children</a></li>
+<li><a class="reference internal" href="#modifying-file-resources" id="id15">Modifying File Resources</a></li>
+<li><a class="reference internal" href="#virtual-hosts" id="id16">Virtual Hosts</a></li>
+<li><a class="reference internal" href="#advanced-techniques" id="id17">Advanced Techniques</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-a-twisted-web-server" id="id18">Running a Twisted Web Server</a><ul>
+<li><a class="reference internal" href="#serving-flat-html" id="id19">Serving Flat HTML</a></li>
+<li><a class="reference internal" href="#resource-scripts" id="id20">Resource Scripts</a></li>
+<li><a class="reference internal" href="#web-uis" id="id21">Web UIs</a></li>
+<li><a class="reference internal" href="#spreadable-web-servers" id="id22">Spreadable Web Servers</a></li>
+<li><a class="reference internal" href="#serving-php-perl-cgi" id="id23">Serving PHP/Perl/CGI</a></li>
+<li><a class="reference internal" href="#serving-wsgi-applications" id="id24">Serving WSGI Applications</a></li>
+<li><a class="reference internal" href="#using-vhostmonster" id="id25">Using VHostMonster</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rewriting-urls" id="id26">Rewriting URLs</a></li>
+<li><a class="reference internal" href="#knowing-when-we-re-not-wanted" id="id27">Knowing When We're Not Wanted</a></li>
+<li><a class="reference internal" href="#as-is-serving" id="id28">As-Is Serving</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

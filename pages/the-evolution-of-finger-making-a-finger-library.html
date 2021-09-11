@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - The Evolution of Finger: making a finger library</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>The Evolution of Finger: making a finger library</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id1">Introduction</a></h2>
+<p>This is the tenth part of the Twisted tutorial <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/twisted-from-scratch-or-the-evolution-of-finger.html">Twisted from Scratch, or The Evolution of Finger</a> .</p>
+<p>In this part, we separate the application code that launches a finger service
+from the library code which defines a finger service, placing the application in
+a Twisted Application Configuration (.tac) file. We also move configuration
+(such as HTML templates) into separate files. Configuration and deployment with
+.tac and twistd are introduced in <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-the-twisted-application-framework.html">Using the Twisted Application Framework</a> .</p>
+</div>
+<div class="section" id="organization">
+<h2><a class="toc-backref" href="#id2">Organization</a></h2>
+<p>Now this code, while quite modular and well-designed, isn't
+properly organized. Everything above the <tt class="docutils literal">application=</tt> belongs in a
+module, and the HTML templates all belong in separate files.</p>
+<p>We can use the <tt class="docutils literal">templateFile</tt> and <tt class="docutils literal">templateDirectory</tt>
+attributes to indicate what HTML template file to use for each Page, and where
+to look for it.</p>
+<p><cite>organized-finger.tac &lt;listings/finger/organized-finger.tac&gt;</cite></p>
+<p>Note that our program is now quite separated. We have:</p>
+<ul class="simple">
+<li>Code (in the module)</li>
+<li>Configuration (file above)</li>
+<li>Presentation (templates)</li>
+<li>Content (<tt class="docutils literal">/etc/users</tt> )</li>
+<li>Deployment (twistd)</li>
+</ul>
+<p>Prototypes don't need this level of separation, so our earlier examples all
+bunched together. However, real applications do. Thankfully, if we write our
+code correctly, it is easy to achieve a good separation of parts.</p>
+</div>
+<div class="section" id="easy-configuration">
+<h2><a class="toc-backref" href="#id3">Easy Configuration</a></h2>
+<p>We can also supply easy configuration for common cases with a <tt class="docutils literal">makeService</tt> method that will also help build .tac files later:</p>
+<p><cite>finger_config.py &lt;listings/finger/finger_config.py&gt;</cite></p>
+<p>And we can write simpler files now:</p>
+<p><cite>simple-finger.tac &lt;listings/finger/simple-finger.tac&gt;</cite></p>
+<div class="highlight"><pre><span></span><span class="gp">% </span>twistd -ny simple-finger.tac
+</pre></div>
+<p>Note: the finger <em>user</em> still has ultimate power: they can use <tt class="docutils literal">makeService</tt>, or they can use the lower-level interface if they have specific needs (maybe an IRC server on some other port? Maybe we want the non-SSL webserver to listen only locally? etc. etc.).
+This is an important design principle: never <em>force</em> a layer of abstraction; <em>allow</em> usage of layers of abstractions instead.</p>
+<p>The pasta theory of design:</p>
+<dl class="docutils">
+<dt>Spaghetti</dt>
+<dd>Each piece of code interacts with every other piece of code (can be implemented with GOTO, functions, objects).</dd>
+<dt>Lasagna</dt>
+<dd>Code has carefully designed layers.
+Each layer is, in theory independent.
+However low-level layers usually cannot be used easily, and high-level layers depend on low-level layers.</dd>
+<dt>Ravioli</dt>
+<dd>Each part of the code is useful by itself.
+There is a thin layer of interfaces between various parts (the sauce).
+Each part can be usefully be used elsewhere.</dd>
+</dl>
+<p>...but sometimes, the user just wants to order "Ravioli", so one coarse-grain easily definable layer of abstraction on top of it all can be useful.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id1">Introduction</a></li>
+<li><a class="reference internal" href="#organization" id="id2">Organization</a></li>
+<li><a class="reference internal" href="#easy-configuration" id="id3">Easy Configuration</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

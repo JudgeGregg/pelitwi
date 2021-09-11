@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Historical Documents</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Historical Documents</h1>
+        
+        <div class="entry-content">
+        <blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name"/>
+<col class="field-body"/>
+<tbody valign="top">
+<tr class="field"><th class="field-name">hidden:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>NEWS</p>
+</blockquote>
+<p>Here are documents which contain no pertinent information or documentation.
+People from the Twisted team have published them, and they serve as interesting land marks and thoughts.
+Please don't look here for documentation -- however, if you are interested in the history of Twisted, or want to quote from these documents, feel free.
+Remember, however -- the documents here may contain wrong information -- they are not updated as Twisted is, to keep their historical value intact.</p>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id3">2003</a></h2>
+<div class="section" id="python-community-conference">
+<h3><a class="toc-backref" href="#id4">Python Community Conference</a></h3>
+<p>These papers were part of the <a class="reference external" href="http://python.org/pycon/">Python Community Conference</a> (PyCon) in March of 2003.</p>
+<!-- Do we want to link slides too? -->
+<p><a class="reference external" href="2003/pycon/deferex.html">Generalization of Deferred Execution in Python</a></p>
+<blockquote>
+<p>A deceptively simple architectural challenge faced by many
+multi-tasking applications is gracefully doing nothing.  Systems that
+must wait for the results of a long-running process, network message, or
+database query while continuing to perform other tasks must establish
+conventions for the semantics of waiting.  The simplest of these is
+blocking in a thread, but it has significant scalability problems.  In
+asynchronous frameworks, the most common approach is for long-running
+methods to accept a callback that will be executed when the command
+completes.  These callbacks will have different signatures depending on
+the nature of the data being requested, and often, a great deal of code
+is necessary to glue one portion of an asynchronous networking system to
+another.  Matters become even more complicated when a developer wants to
+wait for two different events to complete, requiring the developer to
+"juggle" the callbacks and create a third, mutually incompatible
+callback type to handle the final result.</p>
+<p>This paper describes the mechanism used by the Twisted framework for
+waiting for the results of long-running operations.  This mechanism,
+the <tt class="docutils literal">Deferred</tt> , handles the often-neglected problems of
+error handling, callback juggling, inter-system communication and code
+readability.</p>
+</blockquote>
+<p><a class="reference external" href="2003/pycon/applications/applications.html">Applications of the Twisted Framework</a></p>
+<blockquote>
+Two projects developed using the Twisted framework are described;
+one, Twisted.names, which is included as part of the Twisted
+distribution, a domain name server and client API, and one, Pynfo, which
+is packaged separately, a network information robot.</blockquote>
+<p><a class="reference external" href="2003/pycon/conch/conch.html">Twisted Conch: SSH in Python with Twisted</a></p>
+<blockquote>
+Conch is an implementation of the Secure Shell Protocol (currently
+in the IETF standarization process). Secure Shell (or SSH) is a popular
+protocol for remote shell access, file management and port forwarding
+protected by military-grade security. SSH supports multiple encryption and
+compression protocols for the wire transports, and a flexible system of
+multiplexed channels on top. Conch uses the Twisted networking framework
+to supply a library which can be used to implement both SSH clients and
+servers. In addition, it also contains several ready made client programs,
+including a drop-in replacement for the OpenSSH program from the OpenBSD
+project.</blockquote>
+<p><a class="reference external" href="2003/pycon/lore/lore.html">The Lore Document Generation Framework</a></p>
+<blockquote>
+Lore is a documentation generation system which uses a limited
+subset of XHTML, together with some class attributes, as its source
+format. This allows for lower barrier of entry than many other similar
+systems, since HTML authoring tools are plentiful as is knowledge of
+HTML writing. As an added advantage, the source format is viewable
+directly, so that even if Lore is not available the documentation is
+useful. It currently outputs LaTeX and HTML, which allows for most
+use-cases.</blockquote>
+<p><a class="reference external" href="2003/pycon/pb/pb.html">Perspective Broker: "Translucent"  Remote Method calls in Twisted</a></p>
+<blockquote>
+One of the core services provided by the Twisted networking
+framework is "Perspective Broker" , which provides a clean, secure,
+easy-to-use Remote Procedure Call (RPC) mechanism. This paper explains the
+novel features of PB, describes the security model and its implementation,
+and provides brief examples of usage.</blockquote>
+<p><a class="reference external" href="2003/pycon/releasing/releasing.html">Managing the Release of a Large Python Project</a></p>
+<blockquote>
+Twisted is a Python networking framework. At last count, the
+project contains nearly 60,000 lines of effective code (not comments or
+blank lines). When preparing a release, many details must be checked, and
+many steps must be followed. We describe here the technologies and tools
+we use, and explain how we built tools on top of them which help us make
+releasing as painless as possible.</blockquote>
+<p><a class="reference external" href="2003/pycon/twisted-reality/twisted-reality.html">Twisted Reality: A Flexible Framework for Virtual Worlds</a></p>
+<blockquote>
+Flexibly modelling virtual worlds in object-oriented languages has
+historically been difficult; the issues arising from multiple
+inheritance and order-of-execution resolution have limited the
+sophistication of existing object-oriented simulations. Twisted
+Reality avoids these problems by reifying both actions and
+relationships, and avoiding inheritance in favor of automated
+composition through adapters and interfaces.</blockquote>
+</div>
+</div>
+<div class="section" id="previously">
+<h2><a class="toc-backref" href="#id5">Previously</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="ipc10paper.html">The paper Glyph and Moshe presented in IPC10</a></li>
+<li><a class="reference external" href="ipc10errata.html">The errata published in IPC10 against the paper.</a></li>
+<li><a class="reference external" href="twisted-debian.html">A paper Moshe wrote about Twisted and Debian.</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/.html">NEWS, -2014</a></li>
+</ul>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#id1" id="id3">2003</a><ul>
+<li><a class="reference internal" href="#python-community-conference" id="id4">Python Community Conference</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#previously" id="id5">Previously</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

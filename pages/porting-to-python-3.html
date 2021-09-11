@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Porting to Python 3</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Porting to Python 3</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id1">Introduction</a></h2>
+<p>Twisted currently supports only Python 3.5+.
+This document covers Twisted-specific issues in porting your code to Python 3.</p>
+</div>
+<div class="section" id="api-differences">
+<h2><a class="toc-backref" href="#id2">API Differences</a></h2>
+<div class="section" id="twisted-python-failure">
+<h3><a class="toc-backref" href="#id3">twisted.python.failure</a></h3>
+<p><cite>Failure.trap &lt;twisted.python.failure.Failure.trap&gt;</cite>
+raises itself (i.e. a <cite>Failure &lt;twisted.python.failure.Failure&gt;</cite> ) in Python 2. In Python 3,
+the wrapped exception will be re-raised.</p>
+</div>
+</div>
+<div class="section" id="byte-strings-and-text-strings">
+<h2><a class="toc-backref" href="#id4">Byte Strings and Text Strings</a></h2>
+<p>Several APIs which on Python 2 accepted or produced byte strings
+(instances of <tt class="docutils literal">str</tt> , sometimes just called <em>bytes</em> ) have
+changed to accept or produce text strings (instances of <tt class="docutils literal">str</tt> ,
+sometimes just called <em>text</em> or <em>unicode</em> ) on Python 3.</p>
+<p>From <tt class="docutils literal">twisted.internet.address</tt> , the <tt class="docutils literal">IPv4Address</tt>
+and <tt class="docutils literal">IPv6Address</tt> classes have had two attributes change from
+byte strings to text strings: <tt class="docutils literal">type</tt> and <tt class="docutils literal">host</tt> .</p>
+<p><tt class="docutils literal">twisted.python.log</tt> has shifted significantly towards text
+strings from byte strings.  Logging events, particular those produced by a
+call like <tt class="docutils literal"><span class="pre">msg("foo")</span></tt> , must now be text strings.  Consequently,
+on Python 3, event dictionaries passed to log observes will contain text
+strings where they previously contained byte strings.</p>
+<p><tt class="docutils literal">twisted.python.runtime.platformType</tt> and the return value
+from <tt class="docutils literal">twisted.python.runtime.Platform.getType</tt> are now both text
+strings.</p>
+<p><tt class="docutils literal">twisted.python.filepath.FilePath</tt> has <em>not</em> changed.
+It supports only byte strings.  This will probably require applications to
+update their usage of <tt class="docutils literal">FilePath</tt> , at least to pass explicit byte
+string literals rather than "native" string literals (which are text on
+Python 3).</p>
+<p><tt class="docutils literal">reactor.addSystemEventTrigger</tt> arguments that were
+previously byte strings are now native strings.</p>
+<p><tt class="docutils literal">twisted.names.dns</tt> deals with strings with a wide range of
+meanings, often several for each DNS record type.  Most of these strings
+have remained as byte strings, which will probably require application
+updates (for the reason given in the <tt class="docutils literal">FilePath</tt> section above).
+Some strings have changed to text strings, though.  Any string representing
+a human readable address (for
+example, <tt class="docutils literal">Record_A</tt> 's <tt class="docutils literal">address</tt> parameter) is now a
+text string.  Additionally, time-to-live (ttl) values given as strings must
+now be given as text strings.</p>
+<p><tt class="docutils literal">twisted.web.resource.IResource</tt> continues to deal with URLs
+and all URL-derived values as byte strings.</p>
+<p><tt class="docutils literal">twisted.web.resource.ErrorPage</tt> has several string attributes
+(<tt class="docutils literal">template</tt> , <tt class="docutils literal">brief</tt> , and <tt class="docutils literal">detail</tt> ) which
+were previously byte strings.  On Python 3 only, these must now be text
+strings.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id1">Introduction</a></li>
+<li><a class="reference internal" href="#api-differences" id="id2">API Differences</a><ul>
+<li><a class="reference internal" href="#twisted-python-failure" id="id3">twisted.python.failure</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#byte-strings-and-text-strings" id="id4">Byte Strings and Text Strings</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Using the Twisted Web Client</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Using the Twisted Web Client</h1>
+        
+        <div class="entry-content">
+        <div class="section" id="overview">
+<h2><a class="toc-backref" href="#id1">Overview</a></h2>
+<p>This document describes how to use the HTTP client included in Twisted
+Web.  After reading it, you should be able to make HTTP and HTTPS
+requests using Twisted Web.  You will be able to specify the request
+method, headers, and body and you will be able to retrieve the response
+code, headers, and body.</p>
+<p>A number of higher-level features are also explained, including proxying,
+automatic content encoding negotiation, and cookie handling.</p>
+<div class="section" id="prerequisites">
+<h3><a class="toc-backref" href="#id2">Prerequisites</a></h3>
+<p>This document assumes that you are familiar with <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deferred-reference.html">Deferreds and Failures</a> , and <cite>producers and consumers &lt;../../core/howto/producers&gt;</cite> .
+It also assumes you are familiar with the basic concepts of HTTP, such
+as requests and responses, methods, headers, and message bodies.  The
+HTTPS section of this document also assumes you are somewhat familiar with
+SSL and have read about <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-tls-in-twisted.html">using SSL in Twisted</a> .</p>
+</div>
+</div>
+<div class="section" id="the-agent">
+<h2><a class="toc-backref" href="#id3">The Agent</a></h2>
+<div class="section" id="issuing-requests">
+<h3><a class="toc-backref" href="#id4">Issuing Requests</a></h3>
+<p>The <cite>twisted.web.client.Agent</cite> class is the entry
+point into the client API.  Requests are issued using the <cite>request &lt;twisted.web.client.Agent.request&gt;</cite> method, which
+takes as parameters a request method, a request URI, the request headers,
+and an object which can produce the request body (if there is to be one).
+The agent is responsible for connection setup.  Because of this, it
+requires a reactor as an argument to its initializer.  An example of
+creating an agent and issuing a request using it might look like this:</p>
+<p><cite>request.py &lt;listings/client/request.py&gt;</cite></p>
+<p>As may be obvious, this issues a new <em>GET</em> request for <em>/</em>
+to the web server on <tt class="docutils literal">example.com</tt> .  <tt class="docutils literal">Agent</tt> is
+responsible for resolving the hostname into an IP address and connecting
+to it on port 80 (for <em>HTTP</em> URIs), port 443 (for <em>HTTPS</em>
+URIs), or on the port number specified in the URI itself.  It is also
+responsible for cleaning up the connection afterwards.  This code sends
+a request which includes one custom header, <em>User-Agent</em> .  The
+last argument passed to <tt class="docutils literal">Agent.request</tt> is <tt class="docutils literal">None</tt> ,
+though, so the request has no body.</p>
+<p>Sending a request which does include a body requires passing an object
+providing <cite>twisted.web.iweb.IBodyProducer</cite>
+to <tt class="docutils literal">Agent.request</tt> .  This interface extends the more general
+<cite>IPushProducer &lt;twisted.internet.interfaces.IPushProducer&gt;</cite>
+by adding a new <tt class="docutils literal">length</tt> attribute and adding several
+constraints to the way the producer and consumer interact.</p>
+<ul class="simple">
+<li>The length attribute must be a non-negative integer or the constant
+<tt class="docutils literal">twisted.web.iweb.UNKNOWN_LENGTH</tt> .  If the length is known,
+it will be used to specify the value for the
+<em>Content-Length</em> header in the request.  If the length is
+unknown the attribute should be set to <tt class="docutils literal">UNKNOWN_LENGTH</tt> .
+Since more servers support <em>Content-Length</em> , if a length can be
+provided it should be.</li>
+<li>An additional method is required on <tt class="docutils literal">IBodyProducer</tt>
+implementations: <tt class="docutils literal">startProducing</tt> .  This method is used to
+associate a consumer with the producer.  It should return a
+<tt class="docutils literal">Deferred</tt> which fires when all data has been produced.</li>
+<li><tt class="docutils literal">IBodyProducer</tt> implementations should never call the
+consumer's <tt class="docutils literal">unregisterProducer</tt> method.  Instead, when it
+has produced all of the data it is going to produce, it should only
+fire the <tt class="docutils literal">Deferred</tt> returned by <tt class="docutils literal">startProducing</tt> .</li>
+</ul>
+<p>For additional details about the requirements of <cite>IBodyProducer &lt;twisted.web.iweb.IBodyProducer&gt;</cite> implementations, see
+the API documentation.</p>
+<p>Here's a simple <tt class="docutils literal">IBodyProducer</tt> implementation which
+writes an in-memory string to the consumer:</p>
+<p><cite>bytesprod.py &lt;listings/client/bytesprod.py&gt;</cite></p>
+<p>This producer can be used to issue a request with a body:</p>
+<p><cite>sendbody.py &lt;listings/client/sendbody.py&gt;</cite></p>
+<p>If you want to upload a file or you just have some data in a string, you
+don't have to copy <tt class="docutils literal">StringProducer</tt> though.  Instead, you can
+use <cite>FileBodyProducer &lt;twisted.web.client.FileBodyProducer&gt;</cite> .
+This <tt class="docutils literal">IBodyProducer</tt> implementation works with any file-like
+object (so use it with a <tt class="docutils literal">StringIO</tt> if your upload data is
+already in memory as a string); the idea is the same
+as <tt class="docutils literal">StringProducer</tt> from the previous example, but with a
+little extra code to only send data as fast as the server will take it.</p>
+<p><cite>filesendbody.py &lt;listings/client/filesendbody.py&gt;</cite></p>
+<p><tt class="docutils literal">FileBodyProducer</tt> closes the file when it no longer needs it.</p>
+<p>If the connection or the request take too much time, you can cancel the
+<tt class="docutils literal">Deferred</tt> returned by the <tt class="docutils literal">Agent.request</tt> method.
+This will abort the connection, and the <tt class="docutils literal">Deferred</tt> will errback
+with <cite>CancelledError &lt;twisted.internet.defer.CancelledError&gt;</cite> .</p>
+</div>
+<div class="section" id="receiving-responses">
+<h3><a class="toc-backref" href="#id5">Receiving Responses</a></h3>
+<p>So far, the examples have demonstrated how to issue a request.  However,
+they have ignored the response, except for showing that it is a
+<tt class="docutils literal">Deferred</tt> which seems to fire when the response has been
+received.  Next we'll cover what that response is and how to interpret
+it.</p>
+<p><tt class="docutils literal">Agent.request</tt> , as with most <tt class="docutils literal">Deferred</tt> -returning
+APIs, can return a <tt class="docutils literal">Deferred</tt> which fires with a
+<tt class="docutils literal">Failure</tt> .  If the request fails somehow, this will be
+reflected with a failure.  This may be due to a problem looking up the
+host IP address, or it may be because the HTTP server is not accepting
+connections, or it may be because of a problem parsing the response, or
+any other problem which arises which prevents the response from being
+received.  It does <em>not</em> include responses with an error status.</p>
+<p>If the request succeeds, though, the <tt class="docutils literal">Deferred</tt> will fire with
+a <cite>Response &lt;twisted.web.client.Response&gt;</cite> .  This
+happens as soon as all the response headers have been received.  It
+happens before any of the response body, if there is one, is processed.
+The <tt class="docutils literal">Response</tt> object has several attributes giving the
+response information: its code, version, phrase, and headers, as well as
+the length of the body to expect. In addition to these, the
+<tt class="docutils literal">Response</tt> also contains a reference to the <cite>request &lt;twisted.web.iweb.IClientRequest&gt;</cite> that it is
+a response to; one particularly useful attribute on the request is <cite>absoluteURI &lt;twisted.web.iweb.IClientRequest.absoluteURI&gt;</cite> :
+The absolute URI to which the request was made.  The
+<tt class="docutils literal">Response</tt> object has a method which makes the response body
+available: <cite>deliverBody &lt;twisted.web.client.Response.deliverBody&gt;</cite> .  Using the
+attributes of the response object and this method, here's an example
+which displays part of the response to a request:</p>
+<p><cite>response.py &lt;listings/client/response.py&gt;</cite></p>
+<p>The <tt class="docutils literal">BeginningPrinter</tt> protocol in this example is passed to
+<tt class="docutils literal">Response.deliverBody</tt> and the response body is then delivered
+to its <tt class="docutils literal">dataReceived</tt> method as it arrives.  When the body has
+been completely delivered, the protocol's <tt class="docutils literal">connectionLost</tt>
+method is called.  It is important to inspect the <tt class="docutils literal">Failure</tt>
+passed to <tt class="docutils literal">connectionLost</tt> .  If the response body has been
+completely received, the failure will wrap a <cite>twisted.web.client.ResponseDone</cite> exception.  This
+indicates that it is <em>known</em> that all data has been received.  It
+is also possible for the failure to wrap a <cite>twisted.web.http.PotentialDataLoss</cite> exception: this
+indicates that the server framed the response such that there is no way
+to know when the entire response body has been received.  Only
+HTTP/1.0 servers should behave this way.  Finally, it is possible for
+the exception to be of another type, indicating guaranteed data loss for
+some reason (a lost connection, a memory error, etc).</p>
+<p>Just as protocols associated with a TCP connection are given a transport,
+so will be a protocol passed to <tt class="docutils literal">deliverBody</tt> .  Since it makes
+no sense to write more data to the connection at this stage of the
+request, though, the transport <em>only</em> provides <cite>IPushProducer &lt;twisted.internet.interfaces.IPushProducer&gt;</cite> .  This allows the
+protocol to control the flow of the response data: a call to the
+transport's <tt class="docutils literal">pauseProducing</tt> method will pause delivery; a
+later call to <tt class="docutils literal">resumeProducing</tt> will resume it.  If it is
+decided that the rest of the response body is not desired,
+<tt class="docutils literal">stopProducing</tt> can be used to stop delivery permanently;
+after this, the protocol's <tt class="docutils literal">connectionLost</tt> method will be
+called.</p>
+<p>An important thing to keep in mind is that the body will only be read
+from the connection after <tt class="docutils literal">Response.deliverBody</tt> is called.
+This also means that the connection will remain open until this is done
+(and the body read).  So, in general, any response with a body
+<em>must</em> have that body read using <tt class="docutils literal">deliverBody</tt> .  If the
+application is not interested in the body, it should issue a
+<em>HEAD</em> request or use a protocol which immediately calls
+<tt class="docutils literal">stopProducing</tt> on its transport.</p>
+<p>If the body of the response isn't going to be consumed incrementally, then <cite>readBody &lt;twisted.web.client.readBody&gt;</cite> can be used to get the body as a byte-string.
+This function returns a <tt class="docutils literal">Deferred</tt> that fires with the body after the request has been completed; cancelling this <tt class="docutils literal">Deferred</tt> will close the connection to the HTTP server immediately.</p>
+<p><cite>responseBody.py &lt;listings/client/responseBody.py&gt;</cite></p>
+</div>
+<div class="section" id="customizing-your-https-configuration">
+<h3><a class="toc-backref" href="#id6">Customizing your HTTPS Configuration</a></h3>
+<p>Everything you've read so far applies whether the scheme of the request URI is <em>HTTP</em> or <em>HTTPS</em> .</p>
+<p>Since version 15.0.0, Twisted's <tt class="docutils literal">Agent</tt> HTTP client will validate <tt class="docutils literal">https</tt> URLs against your platform's trust store by default.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you're using an earlier version, please upgrade, as this is a <em>critical</em> security feature!</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Only <tt class="docutils literal">Agent</tt>, and things that use it, validates HTTPS.
+Do not use <tt class="docutils literal">getPage</tt> to retrieve HTTPS URLs; although we have not yet removed all the examples that use it, we discourage its use.</p>
+</div>
+<p>You should <tt class="docutils literal">pip install twisted[tls]</tt> in order to get all the dependencies necessary to do TLS properly.
+The <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/installing-optional-dependencies.html">installation instructions</a> gives more detail on optional dependencies and how to install them which may be of interest.</p>
+<p>For some uses, you may need to customize Agent's use of HTTPS; for example, to provide a client certificate, or to use a custom certificate authority for an internal network.</p>
+<p>Here, we're just going to show you how to inject the relevant TLS configuration into an Agent, so we'll use the simplest possible example, rather than a more useful but complex one.</p>
+<p><tt class="docutils literal">Agent</tt>'s constructor takes an optional second argument, which allows you to customize its behavior with respect to HTTPS.
+The object passed here must provide the <cite>twisted.web.iweb.IPolicyForHTTPS</cite> interface.</p>
+<p>Using the very helpful <tt class="docutils literal">badssl.com</tt> web API, we will construct a request that fails to validate, because the certificate has the wrong hostname in it.
+The following Python program should produce a verification error when run as <tt class="docutils literal">python example.py <span class="pre">https://wrong.host.badssl.com/</span></tt>.</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">twisted.internet.task</span> <span class="kn">import</span> <span class="n">react</span>
+
+<span class="kn">from</span> <span class="nn">twisted.web.client</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">ResponseFailed</span>
+
+<span class="nd">@react</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">):</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span><span class="n">reactor</span><span class="p">)</span>
+    <span class="n">requested</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="sa">b</span><span class="s2">"GET"</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">))</span>
+    <span class="k">def</span> <span class="nf">gotResponse</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">code</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">noResponse</span><span class="p">(</span><span class="n">failure</span><span class="p">):</span>
+        <span class="n">failure</span><span class="o">.</span><span class="n">trap</span><span class="p">(</span><span class="n">ResponseFailed</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">failure</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">reasons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">getTraceback</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">requested</span><span class="o">.</span><span class="n">addCallbacks</span><span class="p">(</span><span class="n">gotResponse</span><span class="p">,</span> <span class="n">noResponse</span><span class="p">)</span>
+</pre></div>
+<p>The verification error you see when running the above program is due to the mismatch between "<tt class="docutils literal">wrong.host.badssl.com</tt>", the expected hostname derived from the URL, and "<tt class="docutils literal">badssl.com</tt>", the hostname contained in the certificate presented by the server.
+In our pretend scenario, we want to construct an <tt class="docutils literal">Agent</tt> that validates HTTPS certificates normally, _except_ for this one host.
+For <tt class="docutils literal">"wrong.host.badssl.com"</tt>, we wish to supply the correct hostname to check the certificate against manually, to work around this problem.
+In order to do that, we will supply our own policy that creates a different TLS configuration depending on the hostname, like so:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">zope.interface</span> <span class="kn">import</span> <span class="n">implementer</span>
+
+<span class="kn">from</span> <span class="nn">twisted.internet.task</span> <span class="kn">import</span> <span class="n">react</span>
+<span class="kn">from</span> <span class="nn">twisted.internet.ssl</span> <span class="kn">import</span> <span class="n">optionsForClientTLS</span>
+
+<span class="kn">from</span> <span class="nn">twisted.web.iweb</span> <span class="kn">import</span> <span class="n">IPolicyForHTTPS</span>
+<span class="kn">from</span> <span class="nn">twisted.web.client</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">ResponseFailed</span><span class="p">,</span> <span class="n">BrowserLikePolicyForHTTPS</span>
+
+<span class="nd">@implementer</span><span class="p">(</span><span class="n">IPolicyForHTTPS</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">OneHostnameWorkaroundPolicy</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_normalPolicy</span> <span class="o">=</span> <span class="n">BrowserLikePolicyForHTTPS</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">creatorForNetloc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">port</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">hostname</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">"wrong.host.badssl.com"</span><span class="p">:</span>
+            <span class="n">hostname</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">"badssl.com"</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalPolicy</span><span class="o">.</span><span class="n">creatorForNetloc</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+
+<span class="nd">@react</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">):</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="n">OneHostnameWorkaroundPolicy</span><span class="p">())</span>
+    <span class="n">requested</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="sa">b</span><span class="s2">"GET"</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">))</span>
+    <span class="k">def</span> <span class="nf">gotResponse</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">code</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">noResponse</span><span class="p">(</span><span class="n">failure</span><span class="p">):</span>
+        <span class="n">failure</span><span class="o">.</span><span class="n">trap</span><span class="p">(</span><span class="n">ResponseFailed</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">failure</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">reasons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">getTraceback</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">requested</span><span class="o">.</span><span class="n">addCallbacks</span><span class="p">(</span><span class="n">gotResponse</span><span class="p">,</span> <span class="n">noResponse</span><span class="p">)</span>
+</pre></div>
+<p>Now, invoking <tt class="docutils literal">python example.py <span class="pre">https://wrong.host.badssl.com/</span></tt> will happily give us a <tt class="docutils literal">200</tt> status code; however, running it with <tt class="docutils literal"><span class="pre">https://expired.badssl.com/</span></tt> or <tt class="docutils literal"><span class="pre">https://self-signed.badssl.com/</span></tt> or any of the other error hostnames should still give an error.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The technique presented above does not <em>ignore the mismatching hostname</em>, but rather, it <em>provides the erroneous hostname specifically</em> so that the misconfiguration is expected.
+Twisted does not document any facilities for disabling verification, since that makes TLS useless; instead, we strongly encourage you to figure out what properties you need from the connection and verify those.</p>
+</div>
+<p>Using this TLS policy mechanism, you can customize Agent to use any feature of TLS that Twisted has support for, including the examples given above; client certificates, alternate trust roots, and so on.
+For a more detailed explanation of what options exist for client TLS configuration in Twisted, check out the documentation for the <a class="reference external" href="{filename}twisted.internet.ssl.optionsForClientTLS.rst">optionsForClientTLS</a> API and the <cite>Using SSL in Twisted &lt;../../core/howto/ssl&gt;</cite> chapter of this documentation.</p>
+</div>
+<div class="section" id="http-persistent-connection">
+<h3><a class="toc-backref" href="#id7">HTTP Persistent Connection</a></h3>
+<p>HTTP persistent connections use the same TCP connection to send and
+receive multiple HTTP requests/responses. This reduces latency and TCP
+connection establishment overhead.</p>
+<p>The constructor of <cite>twisted.web.client.Agent</cite>
+takes an optional parameter pool, which should be an instance
+of <cite>HTTPConnectionPool &lt;twisted.web.client.HTTPConnectionPool&gt;</cite> , which will be used
+to manage the connections.  If the pool is created with the
+parameter <tt class="docutils literal">persistent</tt> set to <tt class="docutils literal">True</tt> (the
+default), it will not close connections when the request is done, and
+instead hold them in its cache to be re-used.</p>
+<p>Here's an example which sends requests over a persistent connection:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+<span class="kn">from</span> <span class="nn">twisted.internet.defer</span> <span class="kn">import</span> <span class="n">Deferred</span><span class="p">,</span> <span class="n">DeferredList</span>
+<span class="kn">from</span> <span class="nn">twisted.internet.protocol</span> <span class="kn">import</span> <span class="n">Protocol</span>
+<span class="kn">from</span> <span class="nn">twisted.web.client</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">HTTPConnectionPool</span>
+
+<span class="k">class</span> <span class="nc">IgnoreBody</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deferred</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deferred</span> <span class="o">=</span> <span class="n">deferred</span>
+
+    <span class="k">def</span> <span class="nf">dataReceived</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">connectionLost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deferred</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">cbRequest</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Response code:'</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">code</span><span class="p">)</span>
+    <span class="n">finished</span> <span class="o">=</span> <span class="n">Deferred</span><span class="p">()</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">deliverBody</span><span class="p">(</span><span class="n">IgnoreBody</span><span class="p">(</span><span class="n">finished</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">finished</span>
+
+<span class="n">pool</span> <span class="o">=</span> <span class="n">HTTPConnectionPool</span><span class="p">(</span><span class="n">reactor</span><span class="p">)</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="n">pool</span><span class="o">=</span><span class="n">pool</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">requestGet</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">cbRequest</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span>
+
+<span class="c1"># Two requests to the same host:</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">requestGet</span><span class="p">(</span><span class="s1">'http://localhost:8080/foo'</span><span class="p">)</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">ign</span><span class="p">:</span> <span class="n">requestGet</span><span class="p">(</span><span class="s2">"http://localhost:8080/bar"</span><span class="p">))</span>
+<span class="k">def</span> <span class="nf">cbShutdown</span><span class="p">(</span><span class="n">ignored</span><span class="p">):</span>
+    <span class="n">reactor</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+<span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">cbShutdown</span><span class="p">)</span>
+
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+<p>Here, the two requests are to the same host, one after the each
+other. In most cases, the same connection will be used for the second
+request, instead of two different connections when using a
+non-persistent pool.</p>
+</div>
+<div class="section" id="multiple-connections-to-the-same-server">
+<h3><a class="toc-backref" href="#id8">Multiple Connections to the Same Server</a></h3>
+<p><cite>twisted.web.client.HTTPConnectionPool</cite> instances
+have an attribute
+called <tt class="docutils literal">maxPersistentPerHost</tt> which limits the
+number of cached persistent connections to the same server. The default
+value is 2.  This is effective only when the <cite>persistent &lt;twisted.web.client.HTTPConnectionPool.persistent&gt;</cite> option is
+True. You can change the value like bellow:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.web.client</span> <span class="kn">import</span> <span class="n">HTTPConnectionPool</span>
+
+<span class="n">pool</span> <span class="o">=</span> <span class="n">HTTPConnectionPool</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">pool</span><span class="o">.</span><span class="n">maxPersistentPerHost</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+<p>With the default value of 2, the pool keeps around two connections to
+the same host at most. Eventually the cached persistent connections will
+be closed, by default after 240 seconds; you can change this timeout
+value with the <tt class="docutils literal">cachedConnectionTimeout</tt>
+attribute of the pool. To force all connections to close use
+the <cite>closeCachedConnections &lt;twisted.web.client.HTTPConnectionPool.closeCachedConnections&gt;</cite>
+method.</p>
+<div class="section" id="automatic-retries">
+<h4><a class="toc-backref" href="#id9">Automatic Retries</a></h4>
+<p>If a request fails without getting a response, and the request is
+something that hopefully can be retried without having any side-effects
+(e.g. a request with method GET), it will be retried automatically when
+sending a request over a previously-cached persistent connection. You can
+disable this behavior by setting <cite>retryAutomatically &lt;twisted.web.client.HTTPConnectionPool.retryAutomatically&gt;</cite>
+to <tt class="docutils literal">False</tt> . Note that each request will only be retried
+once.</p>
+</div>
+</div>
+<div class="section" id="following-redirects">
+<h3><a class="toc-backref" href="#id10">Following redirects</a></h3>
+<p>By itself, <tt class="docutils literal">Agent</tt> doesn't follow HTTP redirects (responses
+with 301, 302, 303, 307 status codes and a <tt class="docutils literal">location</tt> header
+field). You need to use the <cite>twisted.web.client.RedirectAgent</cite> class to do so. It
+implements a rather strict behavior of the RFC, meaning it will redirect
+301 and 302 as 307, only on <tt class="docutils literal">GET</tt> and <tt class="docutils literal">HEAD</tt>
+requests.</p>
+<p>The following example shows how to have a redirect-enabled agent.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.python.log</span> <span class="kn">import</span> <span class="n">err</span>
+<span class="kn">from</span> <span class="nn">twisted.web.client</span> <span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">RedirectAgent</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+
+<span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Received response"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">RedirectAgent</span><span class="p">(</span><span class="n">Agent</span><span class="p">(</span><span class="n">reactor</span><span class="p">))</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"http://example.com/"</span><span class="p">)</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">addCallbacks</span><span class="p">(</span><span class="n">display</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ignored</span><span class="p">:</span> <span class="n">reactor</span><span class="o">.</span><span class="n">stop</span><span class="p">())</span>
+    <span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+<p>In contrast, <cite>twisted.web.client.BrowserLikeRedirectAgent</cite> implements
+more lenient behaviour that closely emulates what web browsers do; in
+other words 301 and 302 <tt class="docutils literal">POST</tt> redirects are treated like 303,
+meaning the method is changed to <tt class="docutils literal">GET</tt> before making the redirect
+request.</p>
+<p>As mentioned previously, <cite>Response &lt;twisted.web.client.Response&gt;</cite> contains a reference to both
+the <cite>request &lt;twisted.web.iweb.IClientRequest&gt;</cite> that it is a response
+to, and the previously received <cite>response &lt;twisted.web.client.Response&gt;</cite> , accessible by <cite>previousResponse &lt;twisted.web.client.Response.previousResponse&gt;</cite> .
+In most cases there will not be a previous response, but in the case of
+<tt class="docutils literal">RedirectAgent</tt> the response history can be obtained by
+following the previous responses from response to response.</p>
+</div>
+<div class="section" id="using-a-http-proxy">
+<h3><a class="toc-backref" href="#id11">Using a HTTP proxy</a></h3>
+<p>To be able to use HTTP proxies with an agent, you can use the <cite>twisted.web.client.ProxyAgent</cite> class.
+It supports the same interface as <tt class="docutils literal">Agent</tt>, but takes the endpoint of the proxy as initializer argument.
+This is specifically intended for talking to servers that implement the proxying variation of the HTTP protocol; for other types of proxies you will want <cite>Agent.usingEndpointFactory &lt;twisted.web.client.Agent.usingEndpointFactory&gt;</cite> (see documentation below).</p>
+<p>Here's an example demonstrating the use of an HTTP proxy running on
+localhost:8000.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.python.log</span> <span class="kn">import</span> <span class="n">err</span>
+<span class="kn">from</span> <span class="nn">twisted.web.client</span> <span class="kn">import</span> <span class="n">ProxyAgent</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+<span class="kn">from</span> <span class="nn">twisted.internet.endpoints</span> <span class="kn">import</span> <span class="n">TCP4ClientEndpoint</span>
+
+<span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Received response"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="n">TCP4ClientEndpoint</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="s2">"localhost"</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">ProxyAgent</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"https://example.com/"</span><span class="p">)</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">addCallbacks</span><span class="p">(</span><span class="n">display</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ignored</span><span class="p">:</span> <span class="n">reactor</span><span class="o">.</span><span class="n">stop</span><span class="p">())</span>
+    <span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+<p>Please refer to the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/getting-connected-with-endpoints.html">endpoints documentation</a> for
+more information about how they work and the <cite>twisted.internet.endpoints</cite> API documentation to learn
+what other kinds of endpoints exist.</p>
+</div>
+<div class="section" id="handling-http-cookies">
+<h3><a class="toc-backref" href="#id12">Handling HTTP cookies</a></h3>
+<p>An existing agent instance can be wrapped with
+<cite>twisted.web.client.CookieAgent</cite> to automatically
+store, send and track HTTP cookies. A <tt class="docutils literal">CookieJar</tt>
+instance, from the Python standard library module
+<a class="reference external" href="http://docs.python.org/library/cookielib.html">cookielib</a> , is
+used to store the cookie information. An example of using
+<tt class="docutils literal">CookieAgent</tt> to perform a request and display the collected
+cookies might look like this:</p>
+<p><cite>cookies.py &lt;listings/client/cookies.py&gt;</cite></p>
+</div>
+<div class="section" id="automatic-content-encoding-negotiation">
+<h3><a class="toc-backref" href="#id13">Automatic Content Encoding Negotiation</a></h3>
+<p><cite>twisted.web.client.ContentDecoderAgent</cite> adds
+support for sending <em>Accept-Encoding</em> request headers and
+interpreting <em>Content-Encoding</em> response headers.  These headers
+allow the server to encode the response body somehow, typically with some
+compression scheme to save on transfer
+costs.  <tt class="docutils literal">ContentDecoderAgent</tt> provides this functionality as a
+wrapper around an existing agent instance.  Together with one or more
+decoder objects (such as
+<cite>twisted.web.client.GzipDecoder</cite> ), this wrapper
+automatically negotiates an encoding to use and decodes the response body
+accordingly.  To application code using such an agent, there is no visible
+difference in the data delivered.</p>
+<p><cite>gzipdecoder.py &lt;listings/client/gzipdecoder.py&gt;</cite></p>
+<p>Implementing support for new content encodings is as simple as writing a
+new class like <tt class="docutils literal">GzipDecoder</tt> that can decode a response using
+the new encoding.  As there are not many content encodings in widespread
+use, gzip is the only encoding supported by Twisted itself.</p>
+</div>
+<div class="section" id="connecting-to-non-standard-destinations">
+<h3><a class="toc-backref" href="#id14">Connecting To Non-standard Destinations</a></h3>
+<p>Typically you want your HTTP client to open a TCP connection directly to the web server.
+Sometimes however it's useful to be able to connect some other way, e.g. making an HTTP request over a SOCKS proxy connection or connecting to a server listening on a UNIX socket.
+For this reason, there is an alternate constructor called <cite>Agent.usingEndpointFactory &lt;twisted.web.client.Agent.usingEndpointFactory&gt;</cite> that takes an <tt class="docutils literal">endpointFactory</tt> argument.
+This argument must provide the <cite>twisted.web.iweb.IAgentEndpointFactory</cite> interface.
+Note that when talking to a HTTP proxy, i.e. a server that implements the proxying-specific variant of HTTP you should use <cite>ProxyAgent &lt;twisted.web.client.ProxyAgent&gt;</cite> - see documentation above.</p>
+<p><cite>endpointconstructor.py &lt;listings/client/endpointconstructor.py&gt;</cite></p>
+</div>
+</div>
+<div class="section" id="conclusion">
+<h2><a class="toc-backref" href="#id15">Conclusion</a></h2>
+<p>You should now understand the basics of the Twisted Web HTTP client.  In
+particular, you should understand:</p>
+<ul class="simple">
+<li>How to issue requests with arbitrary methods, headers, and bodies.</li>
+<li>How to access the response version, code, phrase, headers, and body.</li>
+<li>How to store, send, and track cookies.</li>
+<li>How to control the streaming of the response body.</li>
+<li>How to enable the HTTP persistent connection, and control the
+number of connections.</li>
+</ul>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#overview" id="id1">Overview</a><ul>
+<li><a class="reference internal" href="#prerequisites" id="id2">Prerequisites</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-agent" id="id3">The Agent</a><ul>
+<li><a class="reference internal" href="#issuing-requests" id="id4">Issuing Requests</a></li>
+<li><a class="reference internal" href="#receiving-responses" id="id5">Receiving Responses</a></li>
+<li><a class="reference internal" href="#customizing-your-https-configuration" id="id6">Customizing your HTTPS Configuration</a></li>
+<li><a class="reference internal" href="#http-persistent-connection" id="id7">HTTP Persistent Connection</a></li>
+<li><a class="reference internal" href="#multiple-connections-to-the-same-server" id="id8">Multiple Connections to the Same Server</a><ul>
+<li><a class="reference internal" href="#automatic-retries" id="id9">Automatic Retries</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#following-redirects" id="id10">Following redirects</a></li>
+<li><a class="reference internal" href="#using-a-http-proxy" id="id11">Using a HTTP proxy</a></li>
+<li><a class="reference internal" href="#handling-http-cookies" id="id12">Handling HTTP cookies</a></li>
+<li><a class="reference internal" href="#automatic-content-encoding-negotiation" id="id13">Automatic Content Encoding Negotiation</a></li>
+<li><a class="reference internal" href="#connecting-to-non-standard-destinations" id="id14">Connecting To Non-standard Destinations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#conclusion" id="id15">Conclusion</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

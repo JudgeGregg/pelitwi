@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - A Guided Tour of twisted.names.client</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>A Guided Tour of twisted.names.client</h1>
+        
+        <div class="entry-content">
+        <p>Twisted Names provides a layered selection of client APIs.</p>
+<p>In this section you will learn:</p>
+<ul class="simple">
+<li>about the high level <cite>client &lt;twisted.names.client&gt;</cite> API,</li>
+<li>about how you can use the client API interactively from the Python shell (useful for DNS debugging and diagnostics),</li>
+<li>about the <cite>IResolverSimple &lt;twisted.internet.interfaces.IResolverSimple&gt;</cite> and the <cite>IResolver &lt;twisted.internet.interfaces.IResolver&gt;</cite> interfaces,</li>
+<li>about various implementations of those interfaces and when to use them,</li>
+<li>how to customise how the reactor carries out hostname resolution,</li>
+<li>and finally, you will also be introduced to some of the low level APIs.</li>
+</ul>
+<div class="section" id="using-the-global-resolver">
+<h2><a class="toc-backref" href="#id1">Using the Global Resolver</a></h2>
+<p>The easiest way to issue DNS queries from Twisted is to use the module level functions in <cite>names.client &lt;twisted.names.client&gt;</cite>.</p>
+<p>Here's an example showing some DNS queries generated in an interactive <tt class="docutils literal">twisted.conch</tt> shell.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>The <tt class="docutils literal">twisted.conch</tt> shell starts a <tt class="docutils literal">reactor</tt> so that asynchronous operations can be run interactively and it prints the current result of <tt class="docutils literal">deferred</tt>s which have fired.</p>
+<p>You'll notice that the <tt class="docutils literal">deferred</tt>s returned in the following examples do not immediately have a result -- they are waiting for a response from the DNS server.</p>
+<p class="last">So we type <tt class="docutils literal">_</tt> (the default variable) a little later, to display the value of the <tt class="docutils literal">deferred</tt> after an answer has been received and the <tt class="docutils literal">deferred</tt> has fired.</p>
+</div>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>python -m twisted.conch.stdio
+</pre></div>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">twisted.names</span> <span class="kn">import</span> <span class="n">client</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">client</span><span class="o">.</span><span class="n">getHostByName</span><span class="p">(</span><span class="s1">'www.example.com'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="n">Deferred</span> <span class="n">at</span> <span class="mh">0xf5c5a8</span> <span class="n">waiting</span> <span class="n">on</span> <span class="n">Deferred</span> <span class="n">at</span> <span class="mh">0xf5cb90</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">_</span>
+<span class="o">&lt;</span><span class="n">Deferred</span> <span class="n">at</span> <span class="mh">0xf5c5a8</span> <span class="n">current</span> <span class="n">result</span><span class="p">:</span> <span class="s1">'2606:2800:220:6d:26bf:1447:1097:aa7'</span><span class="o">&gt;</span>
+
+<span class="o">&gt;&gt;&gt;</span> <span class="n">client</span><span class="o">.</span><span class="n">lookupMailExchange</span><span class="p">(</span><span class="s1">'twistedmatrix.com'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="n">Deferred</span> <span class="n">at</span> <span class="mh">0xf5cd40</span> <span class="n">waiting</span> <span class="n">on</span> <span class="n">Deferred</span> <span class="n">at</span> <span class="mh">0xf5cea8</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">_</span>
+<span class="o">&lt;</span><span class="n">Deferred</span> <span class="n">at</span> <span class="mh">0xf5cd40</span> <span class="n">current</span> <span class="n">result</span><span class="p">:</span> <span class="p">([</span><span class="o">&lt;</span><span class="n">RR</span> <span class="n">name</span><span class="o">=</span><span class="n">twistedmatrix</span><span class="o">.</span><span class="n">com</span> <span class="nb">type</span><span class="o">=</span><span class="n">MX</span> <span class="n">class</span><span class="o">=</span><span class="n">IN</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">1</span><span class="n">s</span> <span class="n">auth</span><span class="o">=</span><span class="kc">False</span><span class="o">&gt;</span><span class="p">],</span> <span class="p">[],</span> <span class="p">[])</span><span class="o">&gt;</span>
+</pre></div>
+<p>All the <cite>IResolverSimple &lt;twisted.internet.interfaces.IResolverSimple&gt;</cite> and <cite>IResolver &lt;twisted.internet.interfaces.IResolver&gt;</cite> methods are asynchronous and therefore return <tt class="docutils literal">deferred</tt>s.</p>
+<p><cite>getHostByName &lt;twisted.names.client.getHostByName&gt;</cite> (part of <cite>IResolverSimple &lt;twisted.internet.interfaces.IResolverSimple&gt;</cite>) returns an IP address whereas <cite>lookupMailExchange &lt;twisted.names.client.lookupMailExchange&gt;</cite> returns three lists of DNS records.
+These three lists contain answer records, authority records, and additional records.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last">
+<li><p class="first"><cite>getHostByName &lt;twisted.names.client.getHostByName&gt;</cite> may return an IPv6 address; unlike its stdlib equivalent (<cite>socket.gethostbyname</cite>)</p>
+</li>
+<li><p class="first"><cite>IResolver &lt;twisted.internet.interfaces.IResolver&gt;</cite> contains separate functions for looking up each of the common DNS record types.</p>
+</li>
+<li><p class="first"><cite>IResolver &lt;twisted.internet.interfaces.IResolver&gt;</cite> includes a lower level <tt class="docutils literal">query</tt> function for issuing arbitrary queries.</p>
+</li>
+<li><p class="first">The <cite>names.client &lt;twisted.names.client&gt;</cite> module <tt class="docutils literal">directlyProvides</tt> both the <cite>IResolverSimple &lt;twisted.internet.interfaces.IResolverSimple&gt;</cite> and the <cite>IResolver &lt;twisted.internet.interfaces.IResolver&gt;</cite> interfaces.</p>
+</li>
+<li><p class="first"><cite>createResolver &lt;twisted.names.client.createResolver&gt;</cite> constructs a global resolver which performs queries against the same DNS sources and servers used by the underlying operating system.</p>
+<p>That is, it will use the DNS server IP addresses found in a local <tt class="docutils literal">resolv.conf</tt> file (if the operating system provides such a file) and it will use an OS specific <tt class="docutils literal">hosts</tt> file path.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="a-simple-example">
+<h3><a class="toc-backref" href="#id2">A simple example</a></h3>
+<p>In this section you will learn how the <cite>IResolver &lt;twisted.internet.interfaces.IResolver&gt;</cite> interface can be used to write a utility for performing a <a class="reference external" href="https://en.wikipedia.org/wiki/Reverse_DNS_lookup">reverse DNS lookup</a> for an IPv4 address.
+<a class="reference external" href="https://en.wikipedia.org/wiki/Dig_(command)">dig</a> can do this too, so lets start by examining its output:</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>dig -x <span class="m">127</span>.0.0.1
+<span class="go">...</span>
+<span class="go">;; QUESTION SECTION:</span>
+<span class="go">;1.0.0.127.in-addr.arpa.             IN      PTR</span>
+
+<span class="go">;; ANSWER SECTION:</span>
+<span class="go">1.0.0.127.in-addr.arpa.      86400   IN      PTR     localhost.</span>
+<span class="go">...</span>
+</pre></div>
+<p>As you can see, <tt class="docutils literal">dig</tt> has performed a DNS query with the following attributes:</p>
+<ul class="simple">
+<li>Name: <tt class="docutils literal"><span class="pre">1.0.0.127.in-addr.arpa.</span></tt></li>
+<li>Class: <tt class="docutils literal">IN</tt></li>
+<li>Type: <tt class="docutils literal">PTR</tt></li>
+</ul>
+<p>The <em>name</em> is a <strong>reverse domain name</strong> and is derived by reversing an IPv4 address and prepending it to the special <em>in-addr.arpa</em> parent domain name.
+So, lets write a function to create a reverse domain name from an IP address.</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name"/>
+<col class="field-body"/>
+<tbody valign="top">
+<tr class="field"><th class="field-name">pyobject:</th><td class="field-body">reverseNameFromIPAddress</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<p>We can test the output from a python shell:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">reverseNameFromIPAddress</span><span class="p">(</span><span class="s1">'192.0.2.100'</span><span class="p">)</span>
+<span class="s1">'100.2.0.192.in-addr.arpa'</span>
+</pre></div>
+<p>We're going to use <cite>twisted.names.client.lookupPointer</cite> to perform the actual DNS lookup.
+So lets examine the output of <tt class="docutils literal">lookupPointer</tt> so that we can design a function to format and print its results in a style similar to <tt class="docutils literal">dig</tt>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><tt class="docutils literal">lookupPointer</tt> is an asynchronous function, so we'll use an interactive <tt class="docutils literal">twisted.conch</tt> shell here.</p>
+</div>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>python -m twisted.conch.stdio
+</pre></div>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">twisted.names</span> <span class="kn">import</span> <span class="n">client</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">reverse_lookup</span> <span class="kn">import</span> <span class="n">reverseNameFromIPAddress</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">d</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">lookupPointer</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">reverseNameFromIPAddress</span><span class="p">(</span><span class="s1">'127.0.0.1'</span><span class="p">))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">d</span>
+<span class="o">&lt;</span><span class="n">Deferred</span> <span class="n">at</span> <span class="mh">0x286b170</span> <span class="n">current</span> <span class="n">result</span><span class="p">:</span> <span class="p">([</span><span class="o">&lt;</span><span class="n">RR</span> <span class="n">name</span><span class="o">=</span><span class="mf">1.0.0.127</span><span class="o">.</span><span class="ow">in</span><span class="o">-</span><span class="n">addr</span><span class="o">.</span><span class="n">arpa</span> <span class="nb">type</span><span class="o">=</span><span class="n">PTR</span> <span class="n">class</span><span class="o">=</span><span class="n">IN</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">86400</span><span class="n">s</span> <span class="n">auth</span><span class="o">=</span><span class="kc">False</span><span class="o">&gt;</span><span class="p">],</span> <span class="p">[],</span> <span class="p">[])</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">d</span><span class="o">.</span><span class="n">result</span>
+<span class="p">([</span><span class="o">&lt;</span><span class="n">RR</span> <span class="n">name</span><span class="o">=</span><span class="mf">1.0.0.127</span><span class="o">.</span><span class="ow">in</span><span class="o">-</span><span class="n">addr</span><span class="o">.</span><span class="n">arpa</span> <span class="nb">type</span><span class="o">=</span><span class="n">PTR</span> <span class="n">class</span><span class="o">=</span><span class="n">IN</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">86400</span><span class="n">s</span> <span class="n">auth</span><span class="o">=</span><span class="kc">False</span><span class="o">&gt;</span><span class="p">],</span> <span class="p">[],</span> <span class="p">[])</span>
+</pre></div>
+<p>The deferred result of <tt class="docutils literal">lookupPointer</tt> is a tuple containing three lists of records; <strong>answers</strong>, <strong>authority</strong>, and <strong>additional</strong>.
+The actual record is a <cite>Record_PTR &lt;twisted.names.dns.Record_PTR&gt;</cite> instance which can be reached via the <cite>RRHeader &lt;twisted.names.dns.RRHeader&gt;</cite><tt class="docutils literal">.payload</tt> attribute.</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">recordHeader</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">recordHeader</span><span class="o">.</span><span class="n">payload</span>
+<span class="o">&lt;</span><span class="n">PTR</span> <span class="n">name</span><span class="o">=</span><span class="n">localhost</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">86400</span><span class="o">&gt;</span>
+</pre></div>
+<p>So, now we've found the information we need, lets create a function that extracts the first <em>answer</em> and prints the domain name and the record payload.</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name"/>
+<col class="field-body"/>
+<tbody valign="top">
+<tr class="field"><th class="field-name">pyobject:</th><td class="field-body">printResult</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<p>And lets test the output:</p>
+<div class="highlight"><pre><span></span><span class="go">&gt;&gt;&gt; from twisted.names import dns</span>
+<span class="go">&gt;&gt;&gt; printResult(([dns.RRHeader(name='1.0.0.127.in-addr.arpa', type=dns.PTR, payload=dns.Record_PTR('localhost'))], [], []))</span>
+<span class="go">1.0.0.127.in-addr.arpa IN &lt;PTR name=localhost ttl=None&gt;</span>
+</pre></div>
+<p>Fine! Now we can assemble the pieces in a <tt class="docutils literal">main</tt> function, which we'll call using <cite>twisted.internet.task.react</cite>.
+Here's the complete script.</p>
+<p><cite>listings/names/reverse_lookup.py &lt;listings/names/reverse_lookup.py&gt;</cite></p>
+<p>The output looks like this:</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>python reverse_lookup.py <span class="m">127</span>.0.0.1
+<span class="go">1.0.0.127.in-addr.arpa IN &lt;PTR name=localhost ttl=86400&gt;</span>
+</pre></div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>You can read more about reverse domain names in <a class="reference external" href="http://tools.ietf.org/html/rfc1034.html#section-5.2.1">RFC 1034</a>.</li>
+<li>We've ignored IPv6 addresses in this example, but you can read more about reverse IPv6 domain names in <a class="reference external" href="http://tools.ietf.org/html/rfc3596.html#section-2.5">RFC 3596</a> and the example could easily be extended to support these.</li>
+<li>You might also consider using <a class="reference external" href="https://pypi.python.org/pypi/netaddr/">netaddr</a>,  which can generate reverse domain names and which also includes sophisticated IP network and IP address handling.</li>
+<li>This script only prints the first answer, but sometimes you'll get multiple answers due to CNAME indirection, for example in the case of classless reverse zones.</li>
+<li>All lookups and responses are handled asynchronously, so the script could be extended to perform thousands of reverse DNS lookups in parallel.</li>
+</ul>
+</div>
+<p>Next you should study <cite>../examples/multi_reverse_lookup.py &lt;../examples/multi_reverse_lookup.py&gt;</cite> which extends this example to perform both IPv4 and IPv6 addresses and which can perform multiple reverse DNS lookups in parallel.</p>
+</div>
+</div>
+<div class="section" id="creating-a-new-resolver">
+<h2><a class="toc-backref" href="#id3">Creating a New Resolver</a></h2>
+<p>Now suppose we want to create a DNS client which sends its queries to a specific server (or servers).</p>
+<p>In this case, we use <cite>client.Resolver &lt;twisted.names.client.Resolver&gt;</cite> directly and pass it a list of preferred server IP addresses and ports.</p>
+<p>For example, suppose we want to lookup names using the free Google DNS servers:</p>
+<div class="highlight"><pre><span></span><span class="gp">$ </span>python -m twisted.conch.stdio
+</pre></div>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">twisted.names</span> <span class="kn">import</span> <span class="n">client</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">resolver</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">createResolver</span><span class="p">(</span><span class="n">servers</span><span class="o">=</span><span class="p">[(</span><span class="s1">'8.8.8.8'</span><span class="p">,</span> <span class="mi">53</span><span class="p">),</span> <span class="p">(</span><span class="s1">'8.8.4.4'</span><span class="p">,</span> <span class="mi">53</span><span class="p">)])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">resolver</span><span class="o">.</span><span class="n">getHostByName</span><span class="p">(</span><span class="s1">'example.com'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="n">Deferred</span> <span class="n">at</span> <span class="mh">0x9dcfbac</span> <span class="n">current</span> <span class="n">result</span><span class="p">:</span> <span class="s1">'93.184.216.119'</span><span class="o">&gt;</span>
+</pre></div>
+<p>Here we are using the Google DNS server IP addresses and the standard DNS port (53).</p>
+</div>
+<div class="section" id="installing-a-resolver-in-the-reactor">
+<h2><a class="toc-backref" href="#id4">Installing a Resolver in the Reactor</a></h2>
+<p>You can also install a custom resolver into the reactor using the <cite>IReactorPluggableNameResolver &lt;twisted.internet.interfaces.IReactorPluggableNameResolver&gt;</cite> interface.</p>
+<p>The reactor uses its installed resolver whenever it needs to resolve hostnames; for example, when you supply a hostname to <cite>connectTCP &lt;twisted.internet.interfaces.IReactorTCP.connectTCP&gt;</cite>.</p>
+<p>Here's a short example that shows how to install an alternative resolver for the global reactor:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+<span class="kn">from</span> <span class="nn">twisted.names</span> <span class="kn">import</span> <span class="n">client</span>
+<span class="n">reactor</span><span class="o">.</span><span class="n">installResolver</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">createResolver</span><span class="p">(</span><span class="n">servers</span><span class="o">=</span><span class="p">[(</span><span class="s1">'8.8.8.8'</span><span class="p">,</span> <span class="mi">53</span><span class="p">),</span> <span class="p">(</span><span class="s1">'8.8.4.4'</span><span class="p">,</span> <span class="mi">53</span><span class="p">)]))</span>
+</pre></div>
+<p>After this, all hostname lookups requested by the reactor will be sent to the Google DNS servers; instead of to the local operating system.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>By default the reactor uses the POSIX <tt class="docutils literal">gethostbyname</tt> function provided by the operating system,</li>
+<li>but <tt class="docutils literal">gethostbyname</tt> is a blocking function, so it has to be called in a thread pool.</li>
+<li>Check out <cite>ThreadedResolver &lt;twisted.internet.base.ThreadedResolver&gt;</cite> if you're interested in learning more about how the default threaded resolver works.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="lower-level-apis">
+<h2><a class="toc-backref" href="#id5">Lower Level APIs</a></h2>
+<p>Here's an example of how to use the <cite>DNSDatagramProtocol &lt;twisted.names.dns.DNSDatagramProtocol&gt;</cite> directly.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">task</span>
+<span class="kn">from</span> <span class="nn">twisted.names</span> <span class="kn">import</span> <span class="n">dns</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">reactor</span><span class="p">):</span>
+    <span class="n">proto</span> <span class="o">=</span> <span class="n">dns</span><span class="o">.</span><span class="n">DNSDatagramProtocol</span><span class="p">(</span><span class="n">controller</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">reactor</span><span class="o">.</span><span class="n">listenUDP</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">proto</span><span class="p">)</span>
+
+    <span class="n">d</span> <span class="o">=</span> <span class="n">proto</span><span class="o">.</span><span class="n">query</span><span class="p">((</span><span class="s1">'8.8.8.8'</span><span class="p">,</span> <span class="mi">53</span><span class="p">),</span> <span class="p">[</span><span class="n">dns</span><span class="o">.</span><span class="n">Query</span><span class="p">(</span><span class="s1">'www.example.com'</span><span class="p">,</span> <span class="n">dns</span><span class="o">.</span><span class="n">AAAA</span><span class="p">)])</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">printResult</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span>
+
+<span class="k">def</span> <span class="nf">printResult</span><span class="p">(</span><span class="n">res</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'ANSWERS: '</span><span class="p">,</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">payload</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">answers</span><span class="p">])</span>
+
+<span class="n">task</span><span class="o">.</span><span class="n">react</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+</pre></div>
+<p>The disadvantage of working at this low level is that you will need to handle query failures yourself, by manually re-issuing queries or by issuing followup TCP queries using the stream based <cite>dns.DNSProtocol &lt;twisted.names.dns.DNSProtocol&gt;</cite>.</p>
+<p>These things are handled automatically by the higher level APIs in <cite>client &lt;twisted.names.client&gt;</cite>.</p>
+<p>Also notice that in this case, the deferred result of <cite>dns.DNSDatagramProtocol.query &lt;twisted.names.dns.DNSDatagramProtocol&gt;</cite> is a <cite>dns.Message &lt;twisted.names.dns.Message&gt;</cite> object, rather than a list of DNS records.</p>
+</div>
+<div class="section" id="further-reading">
+<h2><a class="toc-backref" href="#id6">Further Reading</a></h2>
+<p>Check out the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/examples-names.html">Twisted Names Examples</a> which demonstrate how the client APIs can be used to create useful DNS diagnostic tools.</p>
+
+</div>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+<div class="toc" id="">
+<p class="topic-title">Table Of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#using-the-global-resolver" id="id1">Using the Global Resolver</a><ul>
+<li><a class="reference internal" href="#a-simple-example" id="id2">A simple example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#creating-a-new-resolver" id="id3">Creating a New Resolver</a></li>
+<li><a class="reference internal" href="#installing-a-resolver-in-the-reactor" id="id4">Installing a Resolver in the Reactor</a></li>
+<li><a class="reference internal" href="#lower-level-apis" id="id5">Lower Level APIs</a></li>
+<li><a class="reference internal" href="#further-reading" id="id6">Further Reading</a></li>
+</ul>
+</div>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>

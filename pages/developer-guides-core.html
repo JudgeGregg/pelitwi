@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>Test Pelican - Developer Guides (Core)</title>
+        <meta charset="utf-8" />
+        <meta name="generator" content="Pelican" />
+
+        <meta name="Description" content="An event-driven networking engine written in Python and MIT licensed." />
+
+        <link rel="stylesheet" type="text/css" href="https://judgegregg.github.io/pelitwi/theme/css/twistedtrac.css" />
+
+
+</head>
+
+<body>
+        <div id="banner">
+                <div id="top_grad"></div>
+                <div id="tab">
+                        <a href="https://twistedmatrix.com/trac/wiki">HOME</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/FrequentlyAskedQuestions">FAQ</a>
+                        <a href="/">DOCS</a>
+                        <a href="https://twistedmatrix.com/trac/wiki/Downloads">DOWNLOAD</a>
+                </div>
+
+                <div id="header">
+                        <a id="logo" href="https://judgegregg.github.io/pelitwi/"><img src="https://judgegregg.github.io/pelitwi/theme/images/trac_banner.png" alt="Twisted" /></a>
+                </div>
+        </div>
+
+<div id="mainnav" class="related">
+	<ul>
+		<li><a href="https://judgegregg.github.io/pelitwi">Twisted 21.2.0 documentation</a> »</li>
+		
+<li><a href="https://judgegregg.github.io/pelitwi/pages/twisted-core.html">Twisted Core</a></li>
+
+	</ul>
+</div>
+        <div id="ctxtnav" class="nav">
+        </div>
+
+    <section>
+
+    <div class="document">
+        <div class="documentwrapper">
+        <div class="bodywrapper">
+        <h1>Developer Guides (Core)</h1>
+        
+        <div class="entry-content">
+        <ul>
+<li><p id="core-howto-index-introduction">Introduction</p>
+<ul>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-vision-for-twisted.html">Executive summary</a></p>
+<p>Connecting your software - and having fun too!</p>
+</li>
+</ul>
+</li>
+<li><p id="core-howto-index-tutorials">Getting Started</p>
+<ul>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-servers.html">Writing a TCP server</a></p>
+<p>Basic network servers with Twisted.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-clients.html">Writing a TCP client</a></p>
+<p>And basic clients.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/test-driven-development-with-twisted.html">Test-driven development with Twisted</a></p>
+<p>Code without tests is broken by definition; Twisted makes it easy to test your network code.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/twisted-from-scratch-or-the-evolution-of-finger.html">Tutorial: Twisted From Scratch</a></p>
+<ol class="arabic simple">
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-building-a-simple-finger-service.html">The Evolution of Finger: building a simple finger service</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-adding-features-to-the-finger-service.html">The Evolution of Finger: adding features to the finger service</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-cleaning-up-the-finger-code.html">The Evolution of Finger: cleaning up the finger code</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-moving-to-a-component-based-architecture.html">The Evolution of Finger: moving to a component based architecture</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-pluggable-backends.html">The Evolution of Finger: pluggable backends</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-a-web-frontend.html">The Evolution of Finger: a clean web frontend</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-twisted-client-support-using-perspective-broker.html">The Evolution of Finger: Twisted client support using Perspective Broker</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-using-a-single-factory-for-multiple-protocols.html">The Evolution of Finger: using a single factory for multiple protocols</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-a-twisted-finger-client.html">The Evolution of Finger: a Twisted finger client</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-making-a-finger-library.html">The Evolution of Finger: making a finger library</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-evolution-of-finger-configuration-of-the-finger-service.html">The Evolution of Finger: configuration and packaging of the finger service</a></li>
+</ol>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/setting-up-the-twistedquotes-application.html">Setting up the TwistedQuotes application</a></p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/designing-twisted-applications.html">Designing a Twisted application</a></p>
+</li>
+</ul>
+</li>
+<li><p id="core-howto-index-events">Networking and Other Event Sources</p>
+<ul>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/overview-of-twisted-internet.html">Twisted Internet</a></p>
+<p>A brief overview of the <tt class="docutils literal">twisted.internet</tt> package.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/reactor-overview.html">Reactor basics</a></p>
+<p>The event loop at the core of your program.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-tls-in-twisted.html">Using SSL in Twisted</a></p>
+<p>Add some security to your network transport.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/udp-networking.html">UDP Networking</a></p>
+<p>How to use Twisted's UDP implementation, including multicast and broadcast functionality.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-processes.html">Using processes</a></p>
+<p>Launching sub-processes, the correct way.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/introduction-to-deferreds.html">Introduction to Deferreds</a></p>
+<p>Like callback functions, only a lot better.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deferred-reference.html">Deferred reference</a></p>
+<p>In-depth information on Deferreds.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/generating-deferreds.html">Generating deferreds</a></p>
+<p>More about Deferreds.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/scheduling-tasks-for-the-future.html">Scheduling</a></p>
+<p>Timeouts, repeated events, and more: when you want things to happen later.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-threads-in-twisted.html">Using threads</a></p>
+<p>Running code in threads, and interacting with Twisted in a thread-safe manner.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/producers-and-consumers-efficient-high-volume-streaming.html">Producers and Consumers: Efficient High-Volume Streaming</a></p>
+<p>How to pause when buffers fill up.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/choosing-a-reactor-and-gui-toolkit-integration.html">Choosing a reactor and GUI toolkit integration</a></p>
+<p>GTK+, Windows, epoll() and more: use your GUI of choice, or a faster event loop.</p>
+</li>
+</ul>
+</li>
+<li><p id="core-howto-index-highlevel">High-Level Infrastructure</p>
+<ul>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/getting-connected-with-endpoints.html">Getting Connected with Endpoints</a></p>
+<p>Create configurable applications that support multiple transports (e.g. TCP and SSL).</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/components-interfaces-and-adapters.html">Interfaces and Adapters (Component Architecture)</a></p>
+<p>When inheritance isn't enough.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/cred-pluggable-authentication.html">Cred: Pluggable Authentication</a></p>
+<p>Implementing authentication and authorization that is configurable, pluggable and re-usable.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-twisted-plugin-system.html">Twisted's plugin architecture</a></p>
+<p>A generic plugin system for extendable programs.</p>
+</li>
+</ul>
+</li>
+<li><p id="core-howto-index-deploying">Deploying Twisted Applications</p>
+<ul>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/the-basics.html">Helper programs and scripts (twistd, ..)</a></p>
+<p><tt class="docutils literal">twistd</tt> lets you daemonize and run your application.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-the-twisted-application-framework.html">Using the Twisted Application Framework</a></p>
+<p>Writing code that <tt class="docutils literal">twistd</tt> can run.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-a-twistd-plugin.html">Writing Twisted Application Plugins for twistd</a></p>
+<p>More powerful <tt class="docutils literal">twistd</tt> deployment method.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/deploying-twisted-with-systemd.html">Deploying Twisted with systemd</a></p>
+<p>Use <tt class="docutils literal">systemd</tt> to launch and monitor Twisted applications.</p>
+</li>
+</ul>
+</li>
+<li><p id="core-howto-index-utilities">Utilities</p>
+<ul>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/logging-with-twistedlogger.html">Emitting and Observing Logs</a></p>
+<p>Keep a record of what your application is up to, and inspect that record to discover interesting information.
+(You may also be interested in the <a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/twisteds-legacy-logging-system-twistedpythonlog.html">legacy logging system</a> if you are maintaining code written to work with older versions of Twisted.)</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/symbolic-constants.html">Symbolic constants</a></p>
+<p>enum-like constants. (Deprecated, spun out into <a class="reference external" href="http://constantly.readthedocs.org/en/latest/">Constantly</a>)</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/twistedenterpriseadbapi-twisted-rdbms-support.html">Twisted RDBMS support with adbapi</a></p>
+<p>Using SQL with your relational database via DB-API adapters.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/parsing-command-lines-with-usageoptions.html">Parsing command-line arguments</a></p>
+<p>The command-line argument parsing used by <tt class="docutils literal">twistd</tt> .</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/dirdbm-directory-based-storage.html">Using Dirdbm: Directory-based Storage</a></p>
+<p>A simplistic way to store data on your filesystem.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/writing-tests-for-twisted-code-using-trial.html">Tips for writing tests for Twisted code using Trial</a></p>
+<p>More information on writing tests.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/extremely-low-level-socket-operations.html">Extremely Low-Level Socket Operations</a></p>
+<p>Using wrappers for sendmsg(2) and recvmsg(2).</p>
+</li>
+</ul>
+</li>
+<li><p id="core-howto-index-amp">Asynchronous Messaging Protocol (AMP)</p>
+<ul>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/asynchronous-messaging-protocol-overview.html">Asynchronous Messaging Protocol Overview</a></p>
+<p>A two-way asynchronous message passing protocol, for when HTTP isn't good enough.</p>
+</li>
+</ul>
+</li>
+<li><p id="core-howto-index-pb">Perspective Broker</p>
+<ul>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/overview-of-twisted-spread.html">Twisted Spread</a></p>
+<p>A remote method invocation (RMI) protocol: call methods on remote objects.</p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/introduction-to-perspective-broker.html">Introduction to Perspective Broker</a></p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/using-perspective-broker.html">Using Perspective Broker</a></p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/managing-clients-of-perspectives.html">Managing Clients of Perspectives</a></p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/pb-copyable-passing-complex-types.html">Passing Complex Types</a></p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/authentication-with-perspective-broker.html">Authentication with Perspective Broker</a></p>
+</li>
+<li><p class="first"><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/pb-limits.html">PB Limits</a></p>
+</li>
+</ul>
+</li>
+<li><p id="core-howto-index-positioning">Positioning</p>
+<ul class="simple">
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/twisted-positioning.html">Twisted Positioning</a></li>
+</ul>
+</li>
+<li><p id="core-howto-index-appendix">Appendix</p>
+<ul class="simple">
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/porting-to-python-3.html">Porting to Python 3</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/twisted-glossary.html">Glossary</a></li>
+<li><a class="reference external" href="https://judgegregg.github.io/pelitwi/pages/debugging-pythontwisted-with-emacs.html">Tips for debugging with emacs</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+        </div>
+        </div>
+<div class="sphinxsidebar">
+<div class="sphinxsidebarwrapper">
+
+<h4>Previous topic</h4>
+<p class="topless">
+<a href=https://judgegregg.github.io/pelitwi/pages/twisted-core.html>Twisted Core</a>
+</p>
+<h4>Next topic</h4>
+<p class="topless">
+<a href=https://judgegregg.github.io/pelitwi/pages/the-vision-for-twisted.html>The Vision For Twisted</a>
+</p>
+</div>
+</div>    </div>
+
+    </section>
+
+        <div id="footer"><hr>
+                <div> </div>
+                <p class="left2">
+        Copyright 2021, Twisted Matrix Labs. Ver 21.2.0. Built on 2021-02-28.<br />
+        Site design<br />
+        By <a href="http://huw.ugbox.net/">huw.wilkins.</a>
+
+                </p>
+                <p class="right"></p>
+        </div>
+
+
+</body>
+</html>
