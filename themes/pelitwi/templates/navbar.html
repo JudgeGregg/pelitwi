@@ -1,8 +1,8 @@
 <div id="mainnav" class="related">
 	<ul>
-	<li><a href="/">Twisted 21.2.0 documentation</a> »</li>
-	{% if page.navbar_link %}
-		{{ pages|get_navbar_link(page)|safe }}
-	{% endif %}
+		<li><a href="{{ SITEURL }}">Twisted 21.2.0 documentation</a> »</li>
+		{% if page.navbar_link %}
+			{{ pages|get_navbar_link(page)|safe }}
+		{% endif %}
 	</ul>
 </div>
